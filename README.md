@@ -6,9 +6,10 @@ COP31 Oyun Hackathonu (GameUp Türkiye / HP) için geliştirilen 2D zaman yolcul
 
 | Dosya | Görev |
 |---|---|
-| `src/data.js` | Bölgeler, parametre bağlantıları, olaylar, kartlar, sözler |
+| `src/data.js` | Bölgeler, parametre bağlantıları, kartlar, sözler |
+| `src/content.js` | Görevler, kararlar, akımlar, mektuplar, haberler |
 | `src/sim.js` | Tarih simülasyonu: `simulate(seed, mudahaleler)` |
-| `src/game.js` | Enerji, tim, kart ve bitiş kuralları |
+| `src/game.js` | Enerji, tim, görev, kart, mektup ve bitiş kuralları |
 | `src/ui.js` | Harita, paneller, sıçrama akışı |
 | `tools/balance.mjs` | Otomatik oynayıp dengeyi ölçen bot |
 

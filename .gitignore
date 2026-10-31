@@ -10,3 +10,7 @@ Thumbs.db
 desktop.ini
 .DS_Store
 .vscode/
+
+# Yerel arsiv ve geri bildirim notlari
+*.7z
+geribildirim_gorselleri_texti/

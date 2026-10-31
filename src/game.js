@@ -1,60 +1,110 @@
-// OYUN KURALLARI: enerji, tim, kartlar, kazanma/kaybetme. UI bilmez.
+// OYUN KURALLARI: enerji, tim, gorevler, kartlar, mektuplar, kazanma/kaybetme. UI bilmez.
 globalThis.CP = globalThis.CP || {};
 (() => {
-  const { ERAS, ROLES, CARDS, FIELD } = CP;
+  const { ERAS, ROLES, CARDS, FIELD, MISSIONS, BLOCK_MISSION, CURRENTS, FINALS, LETTERS } = CP;
   const clamp = CP.clamp;
 
-  // Prototip %: raw puani baslangic tarihi ile kazanma esigi arasina olcekler
-  const WIN_GAIN = 50; // baslangica gore gereken ham artis (tools/balance.mjs ile ayarlandi)
-  const BASE_PROTO = 10;
+  // Prototip kollari: baslangic tarihi ile hedef arasi olcekleme (tools/balance.mjs ile ayarlanir)
+  const GAIN = { tech: 76, eco: 24, peace: 23 };
+  const BASE = 10;
+  CP.TRACKS = { tech: 'Teknoloji', eco: 'Ekosistem', peace: 'Barış' };
 
   CP.newGame = function newGame(seed = (Date.now() % 1e9)) {
     const G = {
       seed, energy: 100, crew: Object.fromEntries(Object.keys(ROLES).map((k) => [k, ROLES[k].start])),
       vets: { sci: 0, res: 0, edu: 0 }, ivs: [], hand: [], jumps: 0, protoBonus: 0, patch: 1,
-      nextId: 1, doomed: false, over: null, rawBase: 0, offers: [],
+      nextId: 1, doomed: false, over: null, offers: [], letters: 0,
     };
     G.base = CP.simulate(seed, []);
-    G.rawBase = CP.rawProto(G.base.final.global, null);
     G.tl = G.base;
-    G.hand = [CARDS[0], CARDS[1]].map((c) => c.id);
+    G.hand = ['fon', 'medya'];
     return G;
   };
 
+  CP.tracks = (G, tl = G.tl) => {
+    if (tl.catastrophe) return { tech: 0, eco: 0, peace: 0 };
+    const out = {};
+    for (const k of Object.keys(GAIN)) out[k] = clamp(BASE + ((tl.raw[k] - G.base.raw[k]) / GAIN[k]) * (100 - BASE));
+    out.tech = clamp(out.tech + G.protoBonus);
+    return out;
+  };
   CP.proto = (G, tl = G.tl) => {
-    if (tl.catastrophe) return 0;
-    const p = BASE_PROTO + ((CP.rawProto(tl.final.global, null) - G.rawBase) / WIN_GAIN) * (100 - BASE_PROTO);
-    return clamp(p + G.protoBonus);
+    const t = CP.tracks(G, tl);
+    return (t.tech + t.eco + t.peace) / 3;
   };
 
-  CP.eraCost = (G, year) => {
-    const e = ERAS.find((x) => x.year === year);
-    return Math.round(e.cost);
-  };
+  CP.eraCost = (G, year) => CP.eraFor(year).cost;
   CP.minCost = () => Math.min(...ERAS.map((e) => e.cost));
+  const roleFor = (G, m) => m.roles.find((r) => G.crew[r] > 0) || null;
+  CP.roleFor = roleFor;
 
-  // Saha olayi secimi: rol + yila uyan olay, sabit hash ile
-  CP.fieldEvent = (G, role, year) => {
-    const list = FIELD.map((f, i) => ({ ...f, i })).filter((f) => f.role === role && year >= f.from && year <= f.to);
-    return list[Math.floor(CP.hash01(G.seed, 'field', G.jumps, role) * list.length)] || null;
+  // Bu bolge ve cag icin 3 gorev: bolgenin ihtiyacina gore, her seferinde cesitli
+  CP.offerMissions = function offerMissions(G, region, year) {
+    const r = G.tl.final.regions[region];
+    const g = G.tl.final.global;
+    const usedHere = new Set(G.ivs.filter((i) => i.kind === 'drop' && i.region === region).map((i) => i.mission));
+    const cands = MISSIONS.filter((m) => year >= m.from && year <= m.to && roleFor(G, m))
+      .map((m) => ({ m, s: m.need(r, g) * (usedHere.has(m.id) ? 0.4 : 1) + CP.hash01(G.seed, 'off', G.jumps, region, year, m.id) * 45 }))
+      .sort((a, b) => b.s - a.s).map((x) => x.m);
+    const out = [];
+    const nextEra = ERAS.find((e) => e.year > year)?.year ?? 2070;
+    const ev = G.tl.log.find((e) => e.r === region && e.kind === 'major' && !e.good && e.y >= year && e.y < nextEra && e.y >= 500);
+    if (ev && CP.canBlock(G, ev)) out.push({ m: BLOCK_MISSION, role: roleFor(G, BLOCK_MISSION), event: ev, year: Math.max(430, ev.y - 10) });
+    // Once farkli rollerden gorev sec, boylece oyuncuya gercek bir tercih kalir
+    const roles = new Set(out.map((o) => o.role));
+    const ordered = [...cands.filter((m) => { const r = roleFor(G, m); if (roles.has(r)) return false; roles.add(r); return true; })];
+    for (const m of cands) if (!ordered.includes(m)) ordered.push(m);
+    for (const m of ordered) {
+      if (out.length >= 3) break;
+      const o = { m, role: roleFor(G, m), year };
+      if (m.current) {
+        const pool = CURRENTS.filter((c) => year >= c.from && year <= c.to);
+        o.current = pool[Math.floor(CP.hash01(G.seed, 'curr', G.jumps, region, year) * pool.length)];
+      }
+      out.push(o);
+    }
+    return out;
+  };
+
+  CP.canBlock = (G, ev) => {
+    if (!ev || ev.good || ev.kind !== 'major' || ev.y < 500) return false;
+    if (G.ivs.some((i) => i.block && i.block.key === ev.id && i.block.region === ev.r && i.block.y === ev.y)) return false;
+    return !!roleFor(G, BLOCK_MISSION) && G.energy >= CP.eraCost(G, Math.max(430, ev.y - 10));
+  };
+
+  // Gorevin uc karari: gelis, kriz, final
+  CP.stages = function stages(G, plan) {
+    const f = FIELD.filter((x) => x.role === plan.role && plan.year >= x.from && plan.year <= x.to);
+    const arrive = f[Math.floor(CP.hash01(G.seed, 'field', G.jumps, plan.role, plan.region) * f.length)];
+    return [arrive, plan.m.crisis, FINALS].map((s) => ({ ...s, text: CP.fill(s.text, plan.region, plan.year) }));
   };
 
   const makeDrop = (G, plan) => ({
-    id: 'd' + G.nextId, kind: 'drop', role: plan.role, year: plan.year, region: plan.region,
-    path: plan.path, field: plan.field, fieldId: plan.fieldId, vet: plan.vet,
-    crack: ERAS.find((e) => e.year === plan.year).crack,
+    id: 'd' + G.nextId, kind: 'drop', role: plan.role, year: plan.year, region: plan.region, mission: plan.m.id,
+    choices: plan.choices || [], vet: plan.vet, current: plan.current?.id, block: plan.event ? { key: plan.event.id, region: plan.event.r, y: plan.event.y } : null,
+    crack: CP.eraFor(plan.year).crack,
   });
-
   const resim = (G, ivs) => CP.simulate(G.seed, ivs, { patch: G.patch });
 
-  // Arastirmaci ustteyse tahmini onizleme
-  CP.preview = (G, plan) => {
+  // Yalnizca denge botu icin: gercek sonuc. Oyuncuya gosterilmez.
+  CP.trueOutcome = (G, plan) => {
     const tl = resim(G, [...G.ivs, makeDrop(G, plan)]);
-    const d = CP.diff(G.tl, tl);
-    return { d, proto: CP.proto(G, tl) - CP.proto(G), cata: tl.catastrophe };
+    return { proto: CP.proto(G, tl) - CP.proto(G), cata: tl.catastrophe };
   };
 
-  // Sicrama: tarih yeniden hesaplanir, fark raporu doner
+  // Arastirmaci raporu: sayi degil yon ve risk
+  CP.intel = (plan) => {
+    const m = plan.m;
+    const fx = { ...(m.useRole ? ROLES[plan.role].fx : {}), ...(m.fx || {}), ...(plan.current?.fx || {}) };
+    const NAMES = { bio: 'Yaban Hayatı', water: 'Su', soil: 'Toprak', renew: 'Temiz Enerji', waste: 'Sıfır Atık', awareness: 'Bilinç', culture: 'Kültür', tech: 'Teknoloji', food: 'Gıda', resilience: 'Kent Direnci', consumption: 'Tüketim', agri: 'Tarım Baskısı', industry: 'Sanayi', military: 'Askeri Bütçe', unrest: 'İsyan', digital: 'Dijital Enerji', env: 'Çevre Bütçesi', ocean: 'Okyanus Yükü' };
+    const list = Object.entries(fx).filter(([k]) => NAMES[k]).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 3)
+      .map(([k, v]) => `${NAMES[k]} ${v > 0 ? '▲' : '▼'}${Math.abs(v) >= 20 ? (v > 0 ? '▲' : '▼') : ''}`);
+    const hz = 0.03 + (m.hz || 0);
+    const span = (2070 - plan.year) / 100;
+    const risk = 1 - Math.pow(1 - hz, span);
+    return { list, risk: risk < 0.12 ? 'Düşük' : risk < 0.4 ? 'Orta' : 'Yüksek' };
+  };
+
   CP.jump = function jump(G, plan) {
     const before = G.tl, protoBefore = CP.proto(G);
     const iv = makeDrop(G, plan);
@@ -67,7 +117,6 @@ globalThis.CP = globalThis.CP || {};
     return afterChange(G, before, protoBefore, iv);
   };
 
-  // Geri toplama: uyeyi deneyimli olarak geri al, vakfin gucu azalir
   CP.extract = function extract(G, id) {
     const iv = G.ivs.find((i) => i.id === id);
     if (!iv || iv.extractedAt || G.energy < CP.eraCost(G, iv.year)) return null;
@@ -83,13 +132,11 @@ globalThis.CP = globalThis.CP || {};
 
   function afterChange(G, before, protoBefore, iv) {
     G.tl = resim(G, G.ivs);
-    // Gemide kalan timin faydalari ve ikmal
-    if (G.crew.sci > 0) G.protoBonus += 2;
-    const renew = G.tl.final.global.renew || 0;
-    const regen = 2 + renew * 0.12;
+    if (G.crew.sci > 0) G.protoBonus += 1.5;
+    const regen = 1 + (G.tl.final.global.renew || 0) * 0.05;
     G.energy = Math.min(100, G.energy + regen);
     let volunteer = null;
-    if (G.jumps % 3 === 0 && G.tl.final.global.awareness > 30) volunteer = addVolunteer(G);
+    if (G.jumps % 3 === 0 && G.tl.final.global.awareness > 18) volunteer = addVolunteer(G);
     const rep = {
       iv, before, after: G.tl, diff: CP.diff(before, G.tl), protoBefore, protoAfter: CP.proto(G), regen, volunteer,
       chain: G.tl.log.filter((e) => iv && e.iv === iv.id),
@@ -104,19 +151,39 @@ globalThis.CP = globalThis.CP || {};
     G.crew[k]++;
     return k;
   }
-
   function drawOffers(G) {
     const n = G.crew.edu > 0 ? 3 : 2;
-    const pool = CARDS.map((c) => c.id);
     const out = [];
     let i = 0;
     while (out.length < n && i < 40) {
-      const id = pool[Math.floor(CP.hash01(G.seed, 'card', G.jumps, i++) * pool.length)];
+      const id = CARDS[Math.floor(CP.hash01(G.seed, 'card', G.jumps, i++) * CARDS.length)].id;
       if (!out.includes(id)) out.push(id);
     }
     return out;
   }
   CP.takeOffer = (G, id) => { if (id && G.hand.length < 4) G.hand.push(id); G.offers = []; };
+
+  // Sicramalar arasi: vakiftan mektup
+  CP.nextLetter = (G) => {
+    if (G.jumps < 2 || G.lastLetter === G.jumps || CP.hash01(G.seed, 'letter', G.jumps) > 0.55) return null;
+    const dead = new Set(G.tl.log.filter((e) => e.kind === 'legacy').map((e) => e.iv));
+    const alive = G.ivs.filter((i) => i.kind === 'drop' && !dead.has(i.id) && !i.extractedAt && i.year < 2030 && (i.letters || 0) < 2);
+    if (!alive.length) return null;
+    const iv = alive[Math.floor(CP.hash01(G.seed, 'lt', G.jumps) * alive.length)];
+    const l = LETTERS[Math.floor(CP.hash01(G.seed, 'lt2', G.jumps) * LETTERS.length)];
+    const century = iv.year < 1500 ? 500 : iv.year < 1950 ? 100 : 20;
+    const year = Math.min(2060, iv.year + century * (1 + (iv.letters || 0)));
+    return { iv, year, letter: { ...l, text: CP.fill(l.text, iv.region, year) } };
+  };
+  CP.answerLetter = (G, ctx, opt) => {
+    const before = G.tl, protoBefore = CP.proto(G);
+    ctx.iv.choices = [...(ctx.iv.choices || []), opt];
+    ctx.iv.letters = (ctx.iv.letters || 0) + 1;
+    G.lastLetter = G.jumps;
+    G.tl = resim(G, G.ivs);
+    checkEnd(G, true);
+    return { iv: ctx.iv, before, after: G.tl, diff: CP.diff(before, G.tl), protoBefore, protoAfter: CP.proto(G) };
+  };
 
   CP.playCard = function playCard(G, idx, region) {
     const c = CARDS.find((x) => x.id === G.hand[idx]);
@@ -132,23 +199,27 @@ globalThis.CP = globalThis.CP || {};
       G.ivs.push({ id: 'c' + G.nextId++, kind: 'card', year: c.year, region, fx: c.fx, fxAll: c.fxAll, ocean: c.ocean, spread: c.spread, card: c.id });
     }
     G.tl = resim(G, G.ivs);
-    const rep = { card: c, before, after: G.tl, diff: CP.diff(before, G.tl), protoBefore, protoAfter: CP.proto(G) };
+    const rep = { card: c, region, before, after: G.tl, diff: CP.diff(before, G.tl), protoBefore, protoAfter: CP.proto(G) };
     checkEnd(G, true);
     return rep;
   };
 
+  // Gemide kimse yok ve geri alinabilecek kimse de kalmadi mi?
+  CP.extractable = (G) => {
+    const dead = new Set(G.tl.log.filter((e) => e.kind === 'legacy').map((e) => e.iv));
+    return G.ivs.filter((i) => i.kind === 'drop' && !i.extractedAt && !dead.has(i.id) && G.energy >= CP.eraCost(G, i.year));
+  };
   function checkEnd(G, fromCard) {
-    if (CP.proto(G) >= 100) { G.over = 'win'; return; }
+    const t = CP.tracks(G);
+    if (t.tech >= 100 && t.eco >= 100 && t.peace >= 100) { G.over = 'win'; return; }
     if (G.tl.catastrophe) {
-      // Son Seans: kiyamet goruldu, bir sans daha
       if (G.doomed && !fromCard) { G.over = G.tl.catastrophe.type; return; }
       G.doomed = true;
     } else G.doomed = false;
+    const end = (why) => { G.over = G.tl.catastrophe ? G.tl.catastrophe.type : why; };
+    if (G.energy < CP.minCost() && !G.hand.includes('yakit')) return end('energy');
     const hasCrew = Object.values(G.crew).some((v) => v > 0);
-    const canExtract = G.ivs.some((i) => i.kind === 'drop' && !i.extractedAt && G.energy >= CP.eraCost(G, i.year)
-      && !G.tl.log.some((e) => e.kind === 'legacy' && e.iv === i.id));
-    if (G.energy < CP.minCost() && !G.hand.includes('yakit')) { G.over = G.tl.catastrophe ? G.tl.catastrophe.type : 'energy'; return; }
-    if (!hasCrew && !canExtract && !G.hand.includes('gonullu')) G.over = G.tl.catastrophe ? G.tl.catastrophe.type : 'crew';
+    if (!hasCrew && !CP.extractable(G).length && !G.hand.includes('gonullu')) end('crew');
   }
   CP.canAct = (G) => Object.values(G.crew).some((v) => v > 0);
 })();

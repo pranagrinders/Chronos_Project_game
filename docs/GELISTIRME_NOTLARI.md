@@ -5,7 +5,8 @@
 - İsim: **Chronos Project: Son Döngü**. Gemi: **Temporal Shift**. Rejim: **totaliter rejim**.
 - Parametreler: GDD'deki **15 küresel** parametre + bölge başına ayrı parametreler. Slayt 7'deki "24" sayısı güncellenecek.
 - Teknoloji: Derleme gerektirmeyen HTML + JS. `index.html` çift tıkla açılır.
-- İçerik `src/data.js` içinde, bağlantılar `CP.LINKS` tablosunda, simülasyon `src/sim.js`, kurallar `src/game.js`.
+- Görev kartları, 3 kararlı akış, akımlar, Olayı Değiştir, mektuplar ve 3 kollu prototip eklendi (1 Kasım).
+- Hikaye içeriği `src/content.js`, dünya verisi `src/data.js` içinde, bağlantılar `CP.LINKS` tablosunda, simülasyon `src/sim.js`, kurallar `src/game.js`.
 - Denge testi: `node tools/balance.mjs`.
 
 Aşağıdaki bölümler ilk öneri metnidir; yukarıdaki kararlarla çelişirse yukarıdakiler geçerlidir.
