@@ -1,0 +1,12 @@
+# OpenOffice kilit dosyaları
+.~lock.*
+
+# Node / build
+node_modules/
+dist/
+
+# İşletim sistemi / editör
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
