@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<title>Chronos Project: Son Döngü</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<canvas id="window"></canvas>
+<div id="app">
+  <header><h1>CHRONOS PROJECT<span>SON DÖNGÜ</span></h1><div id="guide"></div></header>
+
+  <aside id="left">
+    <section class="panel" id="crew"></section>
+    <section class="panel" id="core"></section>
+    <section class="panel" id="drops"></section>
+    <section id="view"><span>GÖZLEM PENCERESİ</span><small id="viewTxt"></small></section>
+  </aside>
+
+  <main>
+    <section class="panel" id="ops">
+      <div class="ptitle"><b>OPERASYON MERKEZİ</b><span id="yearLabel">2070</span>
+        <div class="tabs"><button id="btnBook">Tarih Kitabı</button></div></div>
+      <div id="mapWrap"><svg id="map"></svg><div id="mapLegend"></div></div>
+      <div id="ticker"></div>
+    </section>
+    <section class="panel" id="timeline">
+      <div class="ptitle"><b>ZAMAN ÇİZELGESİ</b><span id="tlHint">Bir çağa tıklayıp o yılın dünyasına bak</span></div>
+      <div id="tlBar"></div>
+      <div class="tlBtns"><button id="btnJump" class="primary">SIÇRAMA HAZIRLIĞI</button><button id="btnEnd" class="ghost">Oyundan çık</button></div>
+    </section>
+  </main>
+
+  <aside id="right">
+    <section class="panel" id="pool"></section>
+    <section class="panel" id="proto"></section>
+    <section class="panel" id="hand"></section>
+  </aside>
+</div>
+<div id="modal" class="hidden"><div id="modalBox"></div></div>
+<script src="src/map-data.js"></script>
+<script src="src/data.js"></script>
+<script src="src/sim.js"></script>
+<script src="src/game.js"></script>
+<script src="src/ui.js"></script>
+</body>
+</html>

@@ -5,7 +5,7 @@ globalThis.CP = globalThis.CP || {};
   const clamp = CP.clamp;
 
   // Prototip %: raw puani baslangic tarihi ile kazanma esigi arasina olcekler
-  const WIN_GAIN = 54; // baslangica gore gereken ham artis (tools/balance.mjs ile ayarlandi)
+  const WIN_GAIN = 50; // baslangica gore gereken ham artis (tools/balance.mjs ile ayarlandi)
   const BASE_PROTO = 10;
 
   CP.newGame = function newGame(seed = (Date.now() % 1e9)) {
@@ -145,8 +145,10 @@ globalThis.CP = globalThis.CP || {};
       G.doomed = true;
     } else G.doomed = false;
     const hasCrew = Object.values(G.crew).some((v) => v > 0);
+    const canExtract = G.ivs.some((i) => i.kind === 'drop' && !i.extractedAt && G.energy >= CP.eraCost(G, i.year)
+      && !G.tl.log.some((e) => e.kind === 'legacy' && e.iv === i.id));
     if (G.energy < CP.minCost() && !G.hand.includes('yakit')) { G.over = G.tl.catastrophe ? G.tl.catastrophe.type : 'energy'; return; }
-    if (!hasCrew && !G.ivs.some((i) => i.kind === 'drop' && !i.extractedAt) && !G.hand.includes('gonullu')) G.over = 'energy';
+    if (!hasCrew && !canExtract && !G.hand.includes('gonullu')) G.over = G.tl.catastrophe ? G.tl.catastrophe.type : 'crew';
   }
   CP.canAct = (G) => Object.values(G.crew).some((v) => v > 0);
 })();

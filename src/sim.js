@@ -280,7 +280,7 @@ globalThis.CP = globalThis.CP || {};
   function regionName(id, y) {
     const d = REG[id];
     if (y < 1500) return d.old[0];
-    if (y < 1960) return d.old[1];
+    if (y < 1920) return d.old[1];
     return d.name;
   }
   CP.regionName = regionName;

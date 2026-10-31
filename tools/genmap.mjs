@@ -31,7 +31,9 @@ const ring = (ids) => {
     const a = i >= 0 ? arcs[i] : [...arcs[~i]].reverse();
     out.push(...(out.length ? a.slice(1) : a));
   }
-  return out;
+  // Tarih degistirme cizgisini kesen halkalar haritada yatay serit cizer: saga tasi
+  const cross = out.some((p, i) => i && Math.abs(p[0] - out[i - 1][0]) > 180);
+  return cross ? out.map(([x, y]) => [x < 0 ? x + 360 : x, y]) : out;
 };
 const W = 1000, H = 520, LATMAX = 84, LATMIN = -58;
 const proj = ([lon, lat]) => [((lon + 180) / 360) * W, ((LATMAX - lat) / (LATMAX - LATMIN)) * H];

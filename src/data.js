@@ -174,7 +174,7 @@ CP.CARDS = [
   { id: 'medya', name: 'Medya Kampanyası', target: true, year: 2026, color: 'amber', desc: 'Seçilen bölgede bilinç yükselir, tüketim düşer.', fx: { awareness: 22, consumption: -14 } },
   { id: 'yama', name: 'Zaman Çatlağı Yaması', color: 'green', desc: 'Birikmiş zamansal kirliliğin yarısını temizler.', patch: 0.5 },
   { id: 'yakit', name: 'Yakıt İkmali', color: 'blue', desc: 'Çekirdek Enerjisi +18.', energy: 18 },
-  { id: 'gonullu', name: 'Yeni Gönüllü', color: 'green', desc: 'Tima seçtiğin rolden değil, en az kalan rolden bir üye katılır.', crew: 1 },
+  { id: 'gonullu', name: 'Yeni Gönüllü', color: 'green', desc: 'Tima, en az kalan rolden bir üye katılır.', crew: 1 },
   { id: 'kalkan', name: 'Vakıf Kalkanı', color: 'blue', desc: 'Son bırakılan vakfın dağılma riskini kalıcı olarak yarıya indirir.', shield: true },
   { id: 'sulh', name: 'Barış Konferansı', target: true, year: 2000, color: 'amber', desc: 'Seçilen bölge ve komşularında askeri bütçe 2000\'den itibaren düşer.', fx: { military: -14 }, spread: 1 },
   { id: 'orman', name: 'Büyük Ağaçlandırma', target: true, year: 1970, color: 'green', desc: 'Seçilen bölgede 1970\'ten itibaren yaban hayatı ve su güçlenir.', fx: { bio: 18, water: 8 } },
@@ -226,6 +226,8 @@ CP.REAL = [
 
 CP.ENDINGS = {
   win: { title: 'DÖNGÜ KIRILDI', text: 'İkinci prototip tamamlandı. Ama kurtardığın dünyada, çekirdeği kaçırdığın totaliter rejim hiç kurulmayacak. Hangar sessiz. Elindeki makine, artık var olmayan bir geleceğin hatırası. Kapıyı kapatıp dışarı çıkıyorsun: yağmur dinmiş.' },
+  crew: { title: 'SON TİM', text: 'Gemide gönderecek kimse kalmadı. Bıraktığın vakıflar sensiz devam edecek. Çekirdek hâlâ yanıyor, ama artık yalnızca bir hatıra.' },
+  quit: { title: 'GÖREV YARIDA KALDI', text: 'Komuta merkezinin ışıklarını kapattın. Zaman çizgisi, olduğu haliyle akmaya devam ediyor.' },
   energy: { title: 'ÇEKİRDEK SÖNDÜ', text: 'Zaman makinesi son enerjisini de harcadı. Gemi 2070\'te hareketsiz kaldı. Bıraktığın tohumlar yaşamaya devam edecek, ama sen sonucunu göremeyeceksin.' },
   nuke: { title: 'NÜKLEER KIŞ', text: 'Koalisyonlar birbirine girdi. Müdahalelerin dünyayı kurtaramadı, belki de bu savaşı sen hızlandırdın. Üste kimse yanıt vermiyor.' },
   water: { title: 'SON KUYU', text: 'Tatlı su rezervleri tükendi. Kentler boşaldı, sınırlar anlamını yitirdi.' },
