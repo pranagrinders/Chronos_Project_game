@@ -13,7 +13,7 @@ globalThis.CP = globalThis.CP || {};
     const G = {
       seed, energy: 100, crew: Object.fromEntries(Object.keys(ROLES).map((k) => [k, ROLES[k].start])),
       vets: { sci: 0, res: 0, edu: 0 }, ivs: [], hand: [], jumps: 0, protoBonus: 0, patch: 1,
-      nextId: 1, doomed: false, over: null, offers: [], letters: 0, orgs: {}, shift: [],
+      nextId: 1, doomed: false, over: null, offers: [], letters: 0, orgs: {}, shift: [], ach: [],
     };
     G.base = CP.simulate(seed, []);
     G.tl = G.base;
@@ -87,6 +87,32 @@ globalThis.CP = globalThis.CP || {};
     G.tl = resim(G, G.ivs);
     checkEnd(G, true);
     return { org, opt, before, after: G.tl, tracksBefore, tracksAfter: CP.tracks(G), energyBefore, energyAfter: G.energy };
+  };
+  // Başarımlar: kazanılan kalır, sonraki sıçramalar geri almaz. Simülasyona dokunmaz.
+  CP.achList = () => [...CP.ACH_WORLD, ...CP.ACH_REGION];
+  CP.achText = (a, region) => a.text.replace('{r}', region ? CP.REGIONS.find((r) => r.id === region).name : '');
+  CP.checkAch = (G) => {
+    G.ach = G.ach || [];
+    const have = new Set(G.ach.map((x) => x.id)), fresh = [];
+    const earn = (a, region) => { const rec = region ? { id: a.id, r: region } : { id: a.id }; G.ach.push(rec); have.add(a.id); fresh.push({ ...a, text: CP.achText(a, region) }); };
+    const drops = G.ivs.filter((i) => i.kind === 'drop');
+    const live = !G.tl.catastrophe;
+    const dead = new Set(G.tl.log.filter((e) => e.kind === 'legacy').map((e) => e.iv));
+    const h = {
+      drops, alive: live ? drops.filter((d) => !dead.has(d.id) && d.extractedAt == null) : [],
+      warsAvoided: live ? warCount(G.base) - warCount(G.tl) : 0, tracks: CP.tracks(G),
+      heatDrop: live ? G.base.final.global.heat - G.tl.final.global.heat : 0,
+      ppmDrop: live ? G.base.final.global.ppm - G.tl.final.global.ppm : 0,
+    };
+    for (const a of CP.ACH_WORLD) if (!have.has(a.id) && a.test(G, h)) earn(a);
+    if (live) for (const a of CP.ACH_REGION) {
+      if (have.has(a.id)) continue;
+      const meets = (r) => (a.min != null ? r[a.key] >= a.min : r[a.key] <= a.max);
+      const hit = CP.REGIONS.filter((r) => meets(G.tl.final.regions[r.id]) && !meets(G.base.final.regions[r.id]))
+        .sort((x, y) => Math.abs(G.tl.final.regions[y.id][a.key] - G.base.final.regions[y.id][a.key]) - Math.abs(G.tl.final.regions[x.id][a.key] - G.base.final.regions[x.id][a.key]))[0];
+      if (hit) earn(a, hit.id);
+    }
+    return fresh;
   };
   const roleFor = (G, m) => m.roles.find((r) => G.crew[r] > 0) || null;
   CP.roleFor = roleFor;

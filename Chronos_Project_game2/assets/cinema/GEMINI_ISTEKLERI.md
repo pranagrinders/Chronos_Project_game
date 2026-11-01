@@ -1,6 +1,8 @@
 # Gemini görsel istekleri
 
-Dosyaları bu klasöre (`assets/cinema/`) tam bu adlarla, PNG olarak koyun. Oyun onları kendiliğinden kullanır;
+Güncel durum: portreler arka planı temizlenmiş `.png`, sahneler `.jpg` olarak oyunda. Gemini'nin `.jfif` çıktısı JPEG'dir; yeni sahne eklerseniz uzantısını `.jpg` yapın.
+
+Dosyaları bu klasöre (`assets/cinema/`) tam bu adlarla koyun. Oyun onları kendiliğinden kullanır;
 bir dosya yoksa eski görsel görünür, hata çıkmaz.
 
 ## Portreler (6 adet)

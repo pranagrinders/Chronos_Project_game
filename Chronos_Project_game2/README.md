@@ -81,6 +81,8 @@ Tarayıcı yerel Türkçe WebSpeechsesi sağlıyorsa **Konuşmayı dinle** gör�
 çevrimiçi ses seçilmez. Bu seçenek her tarayıcıda mevcut olmayabilir;metin daima görünür.
 Manrope/Barlowfontları ve OFLlisansları assets/fonts içindedir;oyun harici font isteği yapmaz.
 
+**Başarımlar:** `CP.ACH_REGION` ve `CP.ACH_WORLD` (`src/content.js`), kontrol `CP.checkAch` (`src/game.js`). Simülasyonu değiştirmez; kazanılan başarım döngü boyunca kalır ve kayda yazılır.
+
 Yeni sistemler: **Dünya Nabzı** (haritanın üstünde, her hedefi besleyen beşer gösterge), **Gemi Vardiyası**
 (sıçramadan önce 2 iş), **Sıçrama hizalama** (atlanabilir; her isabet yakıtı %8 düşürür) ve **Dünya örgütleri**
 (gösterge kotayı aşınca kurulur, 3 yön seçilir). Ayarlar `src/game.js` içindeki `CP.TUNE` satırındadır;

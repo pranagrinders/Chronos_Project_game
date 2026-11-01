@@ -75,6 +75,21 @@ globalThis.CP = globalThis.CP || {};
   function stageLine(plan,index){
     return (plan.tutorial&&tutorialStages[plan.stages[index].title]?.line)||plan.stages[index].text;
   }
+  // Seçeneğin metnine göre sahne. Sıra önemli: ilk eşleşen kazanır, eşleşmeyen sahadaki ekibe düşer.
+  const VISUAL_WORDS=[
+    ['archive',['gizle','sakla','defter','ezber','kaçır','olduğu gibi']],
+    ['boundary',['redde','mahkeme','dava','sokağa','meydan','diren']],
+    ['council',['meclis','ikna','ortaklaş','örgütlen','güvenin','kabul edin','festival','arkamıza','mahalle','görüş','siyaset','kira']],
+    ['route',['halka','herkese','açık','yay','gazete','basın','sızdır','uyar','dağıt','sergi','gönder','ders','atölye','çevir','mizah','kitle']],
+    ['growth',['büyü','satıp','fon','şirket','tüccar','tazminat','karşıla','kral','saygınlık','yenilenebilir','filtre','şebeke','devre']],
+  ];
+  const VISUAL_KINDS={
+    archive:{image:'anatolia-430.png',caption:'Bilgi gözden uzak bir yerde saklanır; erişim sınırlı kalır.'},
+    boundary:{image:'protected-boundary.png',caption:'Karar açıkça karşı duruş gerektirir; tepki de beraberinde gelir.'},
+    council:{image:'common-grazing.png',caption:'Karar, insanlarla yüz yüze konuşularak birlikte alınır.'},
+    route:{image:'anatolia-430.png',caption:'Bilgi kişiden kişiye ve yoldan yola yayılır.'},
+    growth:{image:'common-grazing.png',caption:'Yatırım ve üretim, işi büyütmek için devreye girer.'},
+  };
   function visual(option){
     const t=option.t.toLocaleLowerCase('tr-TR');
     if(t.includes('ortak yönetim'))return{kind:'council',image:'common-grazing.png',caption:'İnsanlar otlakları ve koruma alanını birlikte yönetir.'};
@@ -84,6 +99,8 @@ globalThis.CP = globalThis.CP || {};
     if(t.includes('mühür')||t.includes('arşiv'))return{kind:'archive',image:'anatolia-430.png',caption:'Bilgi tek bir yerde korunur; erişim ve yayılma daha sınırlıdır.'};
     if(option.grow)return{kind:'growth',image:'common-grazing.png',caption:'Kuruluş sermaye desteğiyle zaman içinde büyür.'};
     if(t.includes('devret')||t.includes('uzlaş')||t.includes('birlik'))return{kind:'council',image:'common-grazing.png',caption:'İşi sürdürecek insanlarla bir anlaşma kurulur.'};
+    const match=VISUAL_WORDS.find(([,words])=>words.some(w=>t.includes(w)));
+    if(match)return{kind:match[0],...VISUAL_KINDS[match[0]]};
     return{kind:option.fx?.unrest>0?'boundary':'observe',image:option.fx?.unrest>0?'protected-boundary.png':'anatolia-430.png',caption:'Görev ekibinin uygulayacağı yolun temsili canlandırması.'};
   }
   function choiceLead(o,preview){
@@ -103,8 +120,11 @@ globalThis.CP = globalThis.CP || {};
   function visualFor(option,plan){
     const v=visual(option);
     if(!plan||plan.tutorial)return v;
+    const name=SCENE_KIND[v.kind],era=eraSlug(plan.year),caption='Temsilî sahne · '+v.caption;
+    // Eski çağın birlik ve gerilim sahneleri ilk görevin görselleridir.
+    if(era==='eski'&&(name==='birlik'||name==='gerilim'))return {...v,image:name==='birlik'?'common-grazing.png':'protected-boundary.png',caption};
     const fallback=plan.year>=1880?(v.kind==='boundary'?'anatolia-dry.png':'anatolia-protected.png'):v.image;
-    return {...v,image:`sahne-${SCENE_KIND[v.kind]}-${eraSlug(plan.year)}.png`,fallback,caption:'Temsilî sahne · '+v.caption};
+    return {...v,image:`sahne-${name}-${era}.jpg`,fallback,caption};
   }
   const sceneImg=a=>`<img src="assets/cinema/${a.image}" alt="${esc(a.caption)}"${a.fallback?` onerror="this.onerror=null;this.src='assets/cinema/${a.fallback}'"`:''}>`;
   // Seçenek alt yazısı: kuraldan üretilen kısa kazanç ve bedel.

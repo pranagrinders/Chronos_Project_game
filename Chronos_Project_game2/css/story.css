@@ -311,3 +311,22 @@ body.storyMode{background:#0a1316}
 .reportData .stat{padding-top:2px;padding-bottom:2px}.reportData h3{font-size:15px!important;margin-bottom:2px!important}
 
 #modalBox{scrollbar-width:thin;scrollbar-color:#6f8075 transparent}
+
+/* Başarımlar */
+.achStrip{display:grid;gap:6px;margin:6px 0 10px}
+.achItem,.achToast{display:flex;gap:10px;align-items:flex-start;padding:8px 12px;border:1px solid #c9a55c88;background:linear-gradient(90deg,#c9a55c26,#c9a55c08);font-size:13px;line-height:1.4;color:#d9dfd3}
+.achItem i,.achToast i{font-style:normal;color:#e6c378;font-size:16px;line-height:1.2}
+.achItem small,.achToast small{display:block;font-size:9px;letter-spacing:1.6px;color:#e6c378}
+.achItem b,.achToast b{display:block;color:#f3ecd8;font-size:14px}
+.achToast{position:fixed;bottom:84px;left:18px;z-index:9999;width:320px;background:#101a1ef2;box-shadow:0 8px 30px #000a;animation:achIn .35s ease-out}
+.achToast+.achToast{bottom:178px}.achToast+.achToast+.achToast{bottom:272px}
+@keyframes achIn{from{transform:translateY(-10px);opacity:0}to{transform:none;opacity:1}}
+@media(prefers-reduced-motion:reduce){.achToast{animation:none}}
+.achGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 14px;max-height:62vh;overflow:auto;scrollbar-color:#52645d #101a1e}
+.achRow{display:flex;gap:10px;padding:6px 10px;border:1px solid #52645d55;font-size:12.5px;line-height:1.4;color:#8f9c94}
+.achRow i{font-style:normal;color:#52645d;font-size:15px}
+.achRow b{display:block;font-size:13.5px;color:#aab5ad}
+.achRow.got{border-color:#c9a55c77;background:#c9a55c14;color:#d9dfd3}.achRow.got i{color:#e6c378}.achRow.got b{color:#f3ecd8}
+@media(max-width:800px){.achGrid{grid-template-columns:1fr}}
+.butterfly .achStrip{gap:4px;margin:0 0 10px}.butterfly .achItem{padding:5px 10px;font-size:12px;line-height:1.3}.butterfly .achItem b{font-size:13px}.achMore{color:#e6c378;font-size:11px}
+.butterfly:has(.achStrip) .bflyList{max-height:max(120px,calc(100svh - 620px))}

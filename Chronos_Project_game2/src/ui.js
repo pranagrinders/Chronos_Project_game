@@ -280,6 +280,8 @@
     if (CINEMA) $('#mapHint').hidden = replaying || !!G.over || !CP.canAct(G) || G.energy < CP.minCost();
     $(`#r_ana`).classList.toggle('tutorialTarget', guidedStart && G.jumps === 0);
     $('#btnBook').disabled = replaying;
+    $('#btnAch').disabled = replaying;
+    $('#btnAch').textContent = `Başarımlar ${(G.ach || []).length}/${CP.achList().length}`;
     $('#btnEnd').disabled = replaying;
     $('#btnBridge').hidden = !CINEMA; $('#btnBridge').disabled = replaying || !!G.over;
     $('#btnSave').disabled = replaying || !!G.over;
@@ -584,7 +586,7 @@
     const world = d.global.filter((x) => ['ppm', 'water', 'bio', 'unrest'].includes(x.k) && Math.abs(x.d) >= (x.k === 'ppm' ? 2 : 0.5)).slice(0, 3);
     const worldName = { ppm: ['Küresel karbon', true, ' ppm'], water: ['Küresel tatlı su', false, ''], bio: ['Biyoçeşitlilik', false, ''], unrest: ['İsyan riski', true, ''] };
     const r = rep.resources, f = (n) => n.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
-    return `<div class="reportCols"><section class="butterfly"><h3>Kelebek Etkisi</h3><p class="bflyAction">${story.action}</p>
+    return `<div class="reportCols"><section class="butterfly">${achStrip(rep.ach)}<h3>Kelebek Etkisi</h3><p class="bflyAction">${story.action}</p>
       <div class="bflyList">${points.map((p) => `<div class="bfly ${p.type}"><i>${p.y}</i><span>${p.text}<small>${tags[p.type]}</small></span></div>`).join('') || '<p class="muted">Bu kez tarihe yansıyan bir olay kaydedilmedi.</p>'}</div></section>
       <section class="reportData"><h3>İkinci Prototip</h3>${Object.entries(CP.TRACKS).map(([k, n]) => `<div class="stat"><span>${n}</span><span>%${Math.round(before[k])} → <b>%${Math.round(after[k])}</b></span></div>`).join('')}
       ${story.changes.length ? `<h3>${story.name}</h3>${story.changes.map((x) => `<div class="stat"><span>${x.label}</span><span>${Math.round(x.a)} → <b>${Math.round(x.b)}</b> ${mag(x.d, x.inverse)}</span></div>`).join('')}` : ''}
@@ -592,11 +594,35 @@
       ${d.newMilestones.length ? `<h3>Yeni Eşikler</h3>${d.newMilestones.slice(0, 2).map((m) => `<div class="mile">★ ${REG[m.r].name}: ${m.name}</div>`).join('')}` : ''}
       ${r ? `<div class="stat reportEnergy"><span>Enerji</span><span>${f(r.energyBefore)} → <b>${f(r.energyAfter)}</b></span></div><p class="muted reportEnergyNote">−${f(r.spent)} sıçrama · +${f(r.recovered)} ikmal${r.saved ? ` · ${f(r.saved)} tasarruf` : ''}${r.shipResearch ? ` · Gemi araştırması +${f(r.shipResearch)} teknoloji bonusu` : ''}</p>` : ''}</section></div>`;
   }
+  // Başarımlar: kazanılan satırlar rapora girer, sinema ekranında kısa bir bildirim çıkar.
+  const achStrip = (list) => list?.length ? `<div class="achStrip">${list.slice(0, 3).map((a) => `<div class="achItem"><i>◆</i><span><b>${a.title}</b>${a.text}</span></div>`).join('')}${list.length > 3 ? `<small class="achMore">+${list.length - 3} başarım daha. Tümü Başarımlar listesinde.</small>` : ''}</div>` : '';
+  function achToast(list) {
+    for (const a of list) {
+      const el = document.createElement('div');
+      el.className = 'achToast'; el.setAttribute('role', 'status');
+      el.innerHTML = `<i>◆</i><span><small>BAŞARIM</small><b>${a.title}</b>${a.text}</span>`;
+      document.body.append(el);
+      setTimeout(() => el.remove(), 6000);
+    }
+  }
+  function showAchievements() {
+    const got = new Map((G.ach || []).map((x) => [x.id, x]));
+    const all = CP.achList(), row = (a) => {
+      const rec = got.get(a.id);
+      return `<div class="achRow ${rec ? 'got' : ''}"><i>${rec ? '◆' : '◇'}</i><span><b>${a.title}</b>${rec ? CP.achText(a, rec.r) : a.hint}</span></div>`;
+    };
+    modal(`<h2>Başarımlar</h2><p class="muted" style="margin:0 0 10px">Bu döngüde ${got.size} / ${all.length}. Kazandığın başarım sonraki sıçramalarda geri alınmaz.</p>
+      <div class="achGrid">${[...all.filter((a) => got.has(a.id)), ...all.filter((a) => !got.has(a.id))].map(row).join('')}</div>
+      <div class="mfoot"><span></span><button id="mClose">Kapat</button></div>`);
+    $('#mClose').onclick = closeModal;
+  }
   function showReport(rep, details = false) {
+    if (!rep.ach) rep.ach = CP.checkAch(G);
     if (!(CINEMA && rep.tutorial && !details && !G.over)) {
       if (rep.diff.newMilestones.length) sfx.mile(); else if (rep.protoAfter > rep.protoBefore + 0.5) sfx.good(); else sfx.bad();
     }
     if (G.over) { CP.cinema?.close(); showEnd(rep); return; }
+    if (CINEMA && rep.tutorial && !details) achToast(rep.ach);
     if (CINEMA && rep.tutorial && !details) return CP.cinema.result(G, rep,
       (card) => { CP.takeOffer(G, card); CP.cinema.close(); afterTurn(); },
       () => { CP.cinema.close(); showReport(rep, true); });
@@ -621,7 +647,7 @@
     { target: '#tlBar', title: 'Zaman çizelgesi', text: 'Bir çağa bas, o yılın dünyasını haritada gör. Geçmişi değiştirdikçe bu çizgi de değişir.' },
     { target: '#cardDrawer', title: 'Karar kartların', text: 'Görev sonunda kazandığın kartlar burada durur. Açıp bir karta basarak oynarsın. En fazla 4 kart taşıyabilirsin.', open: true },
     { target: '#view', title: 'Seyir ekranı', text: 'Geminin penceresi. Dünya iyileştikçe yağmur diner, gökyüzü açılır.' },
-    { target: '#ops .tabs', title: 'Gemi ve Tarih Kitabı', text: 'Gemi seni komuta güvertesine götürür. Tarih Kitabı, değiştirdiğin her olayı yıl yıl gösterir.' },
+    { target: '#ops .tabs', title: 'Gemi, Tarih Kitabı, Başarımlar', text: 'Gemi seni komuta güvertesine götürür. Tarih Kitabı, değiştirdiğin her olayı yıl yıl gösterir. Başarımlar, bu döngüde neleri başardığını ve sırada ne olduğunu listeler.' },
     { target: '#shiftBar', title: 'Gemi vardiyası', text: 'Her sıçramadan önce 2 iş seç: araştırma, medya, erzak. Gemide ilgili uzman olmalı; kimi göndereceğini buna göre düşün.' },
     { target: '#btnJump', title: 'Yeni görev', text: 'Haritadan bölge seçmek yerine buradaki listeyi de kullanabilirsin. Artık bölgeyi, çağı ve uzmanı sen seçiyorsun.' },
   ];
@@ -678,10 +704,11 @@
     document.querySelectorAll('[data-org]').forEach((b) => {
       b.onclick = () => {
         const r = CP.answerOrg(G, org, +b.dataset.org);
+        const earned = CP.checkAch(G);
         persistRun(); renderAll();
         if (G.over) { closeModal(); return showEnd(); }
         const rows = Object.entries(CP.TRACKS).map(([k, n]) => `<div class="stat"><span>${n}</span><b>%${Math.round(r.tracksBefore[k])} → %${Math.round(r.tracksAfter[k])}</b></div>`).join('');
-        modal(`<p class="eyebrow">${org.name}</p><h2>${r.opt.t}</h2><p class="lead">${r.opt.note} Etkisi 2030’dan itibaren tarihe işlendi.</p>${rows}${r.energyAfter !== r.energyBefore ? `<div class="stat"><span>Enerji</span><b>${Math.round(r.energyBefore)} → ${Math.round(r.energyAfter)}</b></div>` : ''}<div class="mfoot"><span></span><button class="primary" id="mNext">Devam</button></div>`);
+        modal(`<p class="eyebrow">${org.name}</p><h2>${r.opt.t}</h2><p class="lead">${r.opt.note} Etkisi 2030’dan itibaren tarihe işlendi.</p>${achStrip(earned)}${rows}${r.energyAfter !== r.energyBefore ? `<div class="stat"><span>Enerji</span><b>${Math.round(r.energyBefore)} → ${Math.round(r.energyAfter)}</b></div>` : ''}<div class="mfoot"><span></span><button class="primary" id="mNext">Devam</button></div>`);
         $('#mNext').onclick = () => { closeModal(); continueTurn(); };
         $('#mNext').focus();
       };
@@ -795,6 +822,7 @@
 
   // ---- Oyun sonu ----
   function showEnd() {
+    CP.checkAch(G);
     persistRun();
     const e = ENDINGS[G.over] || ENDINGS.energy;
     const q = QUOTES[Math.floor(CP.hash01(G.seed, 'q', G.jumps) * QUOTES.length)];
@@ -808,7 +836,8 @@
       <div class="stat"><span>Küresel Sıcaklık Artışı</span><b>+${g.heat.toFixed(1)}°C</b></div></div>
       <div><h3>Gerçek Dünyada</h3>${bestReal.map((r) => `<p style="margin:0 0 6px">${r.text}</p>`).join('')}
       <h3>Bu Çizginin Tarihi</h3><div class="chain" style="max-height:280px;overflow:auto">${chronicle(false)}</div></div></div>
-      <div class="mfoot"><span></span><button class="primary" id="mRe">YENİ DÖNGÜ</button></div>`);
+      <div class="mfoot"><button id="mAch">Başarımlar ${(G.ach || []).length}/${CP.achList().length}</button><button class="primary" id="mRe">YENİ DÖNGÜ</button></div>`);
+    $('#mAch').onclick = () => { showAchievements(); $('#mClose').textContent = 'Döngü sonuna dön'; $('#mClose').onclick = showEnd; };
     $('#mRe').onclick = () => start();
   }
 
@@ -904,6 +933,7 @@
 
   $('#btnJump').onclick = () => openPlanner();
   $('#btnBook').onclick = showBook;
+  $('#btnAch').onclick = showAchievements;
   $('#btnBridge').onclick = openBridge;
   $('#btnSave').onclick = () => { if (!replaying && !G.over) persistRun(); };
   $('#btnMute').onclick = () => { muted = !muted; CP.cinema?.setMuted(muted); $('#btnMute').textContent = muted ? 'Ses: Kapalı' : 'Ses: Açık'; };

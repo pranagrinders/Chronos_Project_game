@@ -112,3 +112,25 @@ test('Kelebek haberleri dünyayı değiştirmez, olay sayısını artırır', ()
 test('Örgüt metinleri olumlu; kota sözü geçmez', () => {
   for (const o of CP.ORGS) { assert.ok(o.rise); assert.ok(!/kota|eşi[kğ]/i.test(o.text), o.key); }
 });
+
+test('Başarımlar: simülasyonu değiştirmez, kazanılan kalır, müdahalesiz dünyada verilmez', () => {
+  const { CP } = globalThis;
+  const G = CP.newGame(7);
+  assert.deepEqual(CP.checkAch(G), [], 'Hiç müdahale yokken başarım yok');
+  const ids = CP.achList().map((a) => a.id);
+  assert.equal(new Set(ids).size, ids.length, 'Kimlikler benzersiz');
+  const plan = { ...CP.firstMission(G) };
+  plan.choices = CP.stages(G, plan).map((s) => s.opts[0]);
+  CP.jump(G, plan);
+  const before = JSON.stringify(G.tl.final);
+  const fresh = CP.checkAch(G);
+  assert.equal(JSON.stringify(G.tl.final), before, 'Kontrol tarihi değiştirmez');
+  assert.ok(fresh.some((a) => a.id === 'first'));
+  assert.deepEqual(CP.checkAch(G), [], 'Aynı başarım iki kez verilmez');
+  G.ach.push({ id: 'renew', r: 'ana' });
+  assert.equal(CP.store.unpack(CP.store.pack(G)).ach.length, G.ach.length, 'Kayıttan geri gelir');
+  assert.ok(!/\{r\}/.test(CP.achText(CP.ACH_REGION[0], 'ana')));
+  assert.ok(CP.achText(CP.ACH_REGION[0], 'ana').startsWith('Anadolu'));
+  G.over = 'win';
+  assert.ok(CP.checkAch(G).some((a) => a.id === 'win'), 'Kazanınca Son Döngü verilir');
+});

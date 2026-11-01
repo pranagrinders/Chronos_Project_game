@@ -341,6 +341,39 @@ CP.ORGS = [
     { t: 'Kıtlık fonu kur', note: 'Gıda güçlenir, isyan azalır.', fx: { food: 3, unrest: -5 } } ] },
 ];
 
+// Başarımlar. Yalnız anlatıdır, simülasyonu değiştirmez. Değerler bot ölçümüne göre seçildi:
+// bölge başarımları, o bölgenin müdahalesiz 2070'inde zaten sağlanıyorsa verilmez.
+CP.ACH_REGION = [
+  { id: 'renew', key: 'renew', min: 50, title: 'Yenilenebilir Enerjiye Geçiş', text: '{r} artık enerjisinin en az yarısını temiz kaynaklardan alıyor.', hint: 'Bir bölgede temiz enerjiyi 50’ye çıkar.' },
+  { id: 'water', key: 'water', min: 80, title: 'Akan Nehirler', text: '{r} susuzluğu geride bıraktı; nehirleri 2070’te de akıyor.', hint: 'Bir bölgede suyu 80’e çıkar.' },
+  { id: 'bio', key: 'bio', min: 85, title: 'Yaban Geri Döndü', text: '{r} ormanları ve kıyıları yeniden canlılarla dolu.', hint: 'Bir bölgede yaban hayatını 85’e çıkar.' },
+  { id: 'soil', key: 'soil', min: 75, title: 'Bereketli Toprak', text: '{r} toprağı çölleşmedi; hâlâ ürün veriyor.', hint: 'Bir bölgede toprağı 75’e çıkar.' },
+  { id: 'food', key: 'food', min: 75, title: 'Tok Sofralar', text: '{r} 2070’te kıtlık korkusu yaşamıyor.', hint: 'Bir bölgede gıda güvenliğini 75’e çıkar.' },
+  { id: 'waste', key: 'waste', min: 50, title: 'Sıfır Atık Yolunda', text: '{r} çöpünün yarısını yeniden kullanıma döndürüyor.', hint: 'Bir bölgede sıfır atığı 50’ye çıkar.' },
+  { id: 'awareness', key: 'awareness', min: 50, title: 'Bilinçli Kuşaklar', text: '{r} halkı doğayı korumayı okulda değil, evde öğreniyor.', hint: 'Bir bölgede çevre bilincini 50’ye çıkar.' },
+  { id: 'resilience', key: 'resilience', min: 60, title: 'Dirençli Kentler', text: '{r} kentleri sele ve sıcak dalgasına hazır.', hint: 'Bir bölgede kent direncini 60’a çıkar.' },
+  { id: 'unrest', key: 'unrest', max: 15, title: 'Sakin Sokaklar', text: '{r} sokaklarında 2070’te isyan yok.', hint: 'Bir bölgede isyan riskini 15’e indir.' },
+  { id: 'consumption', key: 'consumption', max: 15, title: 'Azla Yetinmek', text: '{r} daha az tüketerek daha iyi yaşamayı öğrendi.', hint: 'Bir bölgede tüketimi 15’e indir.' },
+];
+// test(G, h): h yardımcıları game.js'te. Metinler koşul sağlandığında gösterilir.
+CP.ACH_WORLD = [
+  { id: 'first', title: 'İlk İz', text: 'Geçmişe ilk izini bıraktın. O küçük adım hâlâ büyüyor.', hint: 'İlk görevini tamamla.', test: (G, h) => h.drops.length >= 1 },
+  { id: 'war1', title: 'Bir Savaş Eksik', text: 'Bu çizgide bir savaş hiç yaşanmadı. Kimse nedenini bilmiyor.', hint: 'Tarihten bir savaşı sil.', test: (G, h) => h.warsAvoided >= 1 },
+  { id: 'war3', title: 'Barış Elçisi', text: 'Üç savaş tarihten silindi. Sayısız insan, hiç bilmediği bir kurtuluşla yaşadı.', hint: 'Tarihten üç savaşı sil.', test: (G, h) => h.warsAvoided >= 3 },
+  { id: 'heat', title: 'Ateşi Düşürdün', text: 'Dünya, senin çizginde 2070’e daha serin ulaşıyor.', hint: 'Küresel ısınmayı 0,4 °C azalt.', test: (G, h) => h.heatDrop >= 0.4 },
+  { id: 'ppm', title: 'Daha Temiz Gökyüzü', text: 'Havadaki karbon 60 ppm azaldı. Yağmur eskisi kadar yakmıyor.', hint: 'Küresel karbonu 60 ppm azalt.', test: (G, h) => h.ppmDrop >= 60 },
+  { id: 'tech75', title: 'Bilgi Yaşıyor', text: 'Teknoloji kolu %75’e ulaştı. Makinenin çizimleri artık okunabiliyor.', hint: 'Teknoloji kolunu %75’e getir.', test: (G, h) => h.tracks.tech >= 75 },
+  { id: 'eco75', title: 'Dünya Nefes Alıyor', text: 'Ekosistem kolu %75’e ulaştı.', hint: 'Ekosistem kolunu %75’e getir.', test: (G, h) => h.tracks.eco >= 75 },
+  { id: 'peace75', title: 'Silahlar Susuyor', text: 'Barış kolu %75’e ulaştı.', hint: 'Barış kolunu %75’e getir.', test: (G, h) => h.tracks.peace >= 75 },
+  { id: 'regions', title: 'Dünya Turu', text: 'Altı ayrı bölgeye uzman bıraktın.', hint: 'Altı farklı bölgede görev yap.', test: (G, h) => new Set(h.drops.map((d) => d.region)).size >= 6 },
+  { id: 'eras', title: 'Çağlar Arası', text: 'Eski çağda, sanayi çağında ve modern çağda iz bıraktın.', hint: 'Üç çağın hepsinde görev yap.', test: (G, h) => [h.drops.some((d) => d.year < 1880), h.drops.some((d) => d.year >= 1880 && d.year < 1970), h.drops.some((d) => d.year >= 1970)].every(Boolean) },
+  { id: 'roles', title: 'Tam Kadro', text: 'Bilim insanı, araştırmacı ve eğitmen; üçü de geçmişte iz bıraktı.', hint: 'Üç uzmanlık türünün hepsini gönder.', test: (G, h) => new Set(h.drops.map((d) => d.role)).size >= 3 },
+  { id: 'old', title: 'Bin Yıllık Miras', text: '1000 yılından önce kurduğun iki yapı 2070’e sağlam ulaştı.', hint: '1000 yılından önce kurduğun iki mirası 2070’e ulaştır.', test: (G, h) => h.alive.filter((d) => d.year < 1000).length >= 2 },
+  { id: 'block', title: 'Tarihe Müdahale', text: 'Yaşanmış bir felaketin hemen öncesine gidip gidişatı değiştirmeyi denedin.', hint: 'Tarih Kitabı’ndan bir olayı önlemeye git.', test: (G, h) => h.drops.some((d) => d.mission === CP.BLOCK_MISSION.id) },
+  { id: 'orgs', title: 'Dünya Sahnesinde', text: 'Üç dünya örgütüne yön verdin.', hint: 'Üç dünya örgütü kurulmasını sağla.', test: (G) => Object.keys(G.orgs).length >= 3 },
+  { id: 'win', title: 'Son Döngü', text: 'İkinci makine tamamlandı. Döngü kapandı.', hint: 'Üç kolu da %100’e getir.', test: (G) => G.over === 'win' },
+];
+
 // Gemi Vardiyası: sıçramalar arasında 2 iş. Gemide ilgili uzman olmalı.
 CP.SHIFTS = [
   { id: 'research', role: 'sci', name: 'Araştırma', gain: 'Teknoloji +%1,5', desc: 'Gemideki bilim insanları çalışır. Sonraki sıçramada Teknoloji hedefi +%1,5.' },
