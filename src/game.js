@@ -5,7 +5,7 @@ globalThis.CP = globalThis.CP || {};
   const clamp = CP.clamp;
 
   // Prototip kollari: baslangic tarihi ile hedef arasi olcekleme (tools/balance.mjs ile ayarlanir)
-  CP.TUNE = { gain: { tech: 140, eco: 45, peace: 42 }, alignPerHit: 0.08, supply: 2, orgPower: 0.5, orgQuota: 2, recruitEvery: 2 };
+  CP.TUNE = { gain: { tech: 140, eco: 45, peace: 42 }, alignPerHit: 0.08, supply: 2, orgPower: 0.5, orgQuota: 2, recruitEvery: 2, fuelGain: 30 };
   const BASE = 10;
   CP.TRACKS = { tech: 'Teknoloji', eco: 'Ekosistem', peace: 'Barış' };
 
@@ -13,7 +13,7 @@ globalThis.CP = globalThis.CP || {};
     const G = {
       seed, energy: 100, crew: Object.fromEntries(Object.keys(ROLES).map((k) => [k, ROLES[k].start])),
       vets: { sci: 0, res: 0, edu: 0 }, ivs: [], hand: [], jumps: 0, protoBonus: 0, patch: 1,
-      nextId: 1, doomed: false, over: null, offers: [], letters: 0, orgs: {}, shift: [], ach: [],
+      nextId: 1, doomed: false, over: null, offers: [], letters: 0, orgs: {}, shift: [], ach: [], fueled: [], fuelShown: 0,
     };
     G.base = CP.simulate(seed, []);
     G.tl = G.base;
@@ -306,6 +306,13 @@ globalThis.CP = globalThis.CP || {};
   function checkEnd(G, fromCard) {
     const t = CP.tracks(G);
     if (t.tech >= 100 && t.eco >= 100 && t.peace >= 100) { G.over = 'win'; return; }
+    // Tamamlanan kol bir kez büyük yakıt ikmali yapar. Sürekli ikmal en ucuz çağı bedavaya getiriyordu.
+    G.fueled = G.fueled || [];
+    for (const k of Object.keys(CP.TRACKS)) {
+      if (t[k] < 100 || G.fueled.some((f) => f.k === k)) continue;
+      const gain = Math.round((Math.min(100, G.energy + CP.TUNE.fuelGain) - G.energy) * 10) / 10;
+      G.energy = Math.min(100, G.energy + gain); G.fueled.push({ k, gain });
+    }
     if (G.tl.catastrophe) {
       if (G.doomed && !fromCard) { G.over = G.tl.catastrophe.type; return; }
       G.doomed = true;
@@ -315,5 +322,6 @@ globalThis.CP = globalThis.CP || {};
     const hasCrew = Object.values(G.crew).some((v) => v > 0);
     if (!hasCrew && !CP.recruitDue(G) && !CP.extractable(G).length && !G.hand.includes('gonullu')) end('crew');
   }
+  CP.nextFuel = (G) => (G.over ? null : (G.fueled || [])[G.fuelShown || 0] || null);
   CP.canAct = (G) => Object.values(G.crew).some((v) => v > 0);
 })();

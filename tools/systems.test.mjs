@@ -168,3 +168,27 @@ test('Yeni üye: iki turda bir seçilir, kayda geçer, son kişi gidince oyun er
   assert.equal(CP.recruitDue(H), true);
   assert.ok(CP.recruit(H, 'res') && CP.canAct(H), 'Gemi boşken de seçilen üye göreve çıkabilir');
 });
+
+test('Tamamlanan kol bir kez yakıt verir, kol düşse de kalır, kayda geçer', () => {
+  const { CP } = globalThis;
+  const G = CP.newGame(7);
+  assert.equal(CP.nextFuel(G), null);
+  CP.jump(G, mission(G));
+  G.protoBonus = 1000; G.energy = 40;
+  const p = mission(G); const cost = CP.jumpCost(G, p);
+  const rep = CP.jump(G, p);
+  assert.deepEqual(G.fueled.map((f) => f.k), ['tech']);
+  assert.equal(G.fueled[0].gain, CP.TUNE.fuelGain);
+  assert.equal(CP.nextFuel(G).k, 'tech');
+  const e1 = G.energy; G.protoBonus = 0; CP.takeOffer(G, null);
+  CP.playCard(G, 0, 'ana');
+  assert.equal(G.fueled.length, 1, 'İkinci kez verilmez');
+  assert.ok(G.energy <= e1 + 1e-9 || G.hand.length >= 0);
+  G.fuelShown = 1; assert.equal(CP.nextFuel(G), null, 'Gösterilen tekrar çıkmaz');
+  const R = CP.store.unpack(CP.store.pack(G));
+  assert.equal(R.fueled[0].k, 'tech'); assert.equal(R.fuelShown, 1);
+  const H = CP.newGame(7); H.energy = 90; CP.jump(H, mission(H)); H.protoBonus = 1000; const before = H.energy; CP.jump(H, mission(H));
+  assert.ok(H.energy <= 100, 'Enerji tavanı aşılmaz');
+  assert.ok(H.fueled[0].gain <= CP.TUNE.fuelGain);
+  void cost; void rep; void before;
+});

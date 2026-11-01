@@ -230,7 +230,7 @@
     const start = performance.now(); let lastIndex = -1;
     function tick(now) {
       if (ended || currentToken !== token) return;
-      const progress = Math.min(1, (now - start) / duration);
+      const progress = Math.max(0, Math.min(1, (now - start) / duration));
       const index = Math.min(sequence.history.length - 1, Math.floor(progress * sequence.history.length));
       root.style.setProperty('--journey', String(progress));
       $('#cTimeFill').style.width = progress * 100 + '%';

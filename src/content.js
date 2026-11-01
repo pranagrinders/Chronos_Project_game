@@ -389,6 +389,13 @@ CP.ACH_WORLD = [
   { id: 'win', title: 'Son Döngü', text: 'İkinci makine tamamlandı. Döngü kapandı.', hint: 'Üç kolu da %100’e getir.', test: (G) => G.over === 'win' },
 ];
 
+// Bir kol %100 olunca dünya gemiye yakıt gönderir. Kol sonradan düşse de kazanım kalır.
+CP.FUEL = {
+  peace: { title: 'Karanlık Madde Reaktörü', rise: 'Barış %100', text: 'Komutan, silah fabrikaları yıllar önce sustu. O bütçe kuşaklar boyunca tek bir işe aktı ve dünya ilk karanlık madde reaktörünü çalıştırdı. Kurduğun kuruluşların mirasçıları yakıtı gemiye gönderiyor.' },
+  tech: { title: 'Çekirdek Yakıt Hattı', rise: 'Teknoloji %100', text: 'Komutan, senin bıraktığın bilgiyle yetişen laboratuvarlar çekirdeğimizin yakıtını sentezlemeyi başardı. Artık makineyi tek başımıza beslemiyoruz; yakıt gemiye geliyor.' },
+  eco: { title: 'Gezegen Şebekesi', rise: 'Ekosistem %100', text: 'Komutan, nehirler ve ormanlar geri döndü; dünya artık ihtiyacından fazla temiz enerji üretiyor. Kurduğun kuruluşların mirasçıları bu fazlayı gemiye aktarıyor.' },
+};
+
 // Gemi Vardiyası: sıçramalar arasında 2 iş. Gemide ilgili uzman olmalı.
 CP.SHIFTS = [
   { id: 'research', role: 'sci', name: 'Araştırma', gain: 'Teknoloji +%1,5', desc: 'Gemideki bilim insanları çalışır. Sonraki sıçramada Teknoloji hedefi +%1,5.' },

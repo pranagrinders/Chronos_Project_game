@@ -640,7 +640,7 @@
   const tourSteps = [
     { target: '#resourceHud .hudEnergy', title: 'Enerji', text: 'Her sıçrama enerji harcar, görevden sonra biraz geri gelir. Biterse döngü biter.' },
     { target: '#resourceHud .hudCrew', title: 'Ekibin', text: 'Her göreve bir uzman gider ve o çağda kalır. İki turda bir yeni üye seçersin; arada kişi gerekirse geçmişten geri alırsın, ama bu pahalıdır.' },
-    { target: '#resourceHud .hudPrototype', title: 'Asıl hedefin', text: 'Teknoloji, Ekosistem ve Barış. Üçü de %100 olunca ikinci makine tamamlanır ve oyunu kazanırsın.' },
+    { target: '#resourceHud .hudPrototype', title: 'Asıl hedefin', text: 'Teknoloji, Ekosistem ve Barış. Bir kol %100 olunca dünya gemiye yakıt gönderir. Üçü de %100 olunca ikinci makine tamamlanır ve oyunu kazanırsın.' },
     { target: '#pulse', title: 'Dünya Nabzı', text: 'Her hedefi beşer gösterge besler; burada iyileşen şey hedefi de doldurur. Bir göstergenin çubuğu dolunca dünya örgütü kurulur ve yönünü sen seçersin.' },
     { target: '#mapWrap', title: 'Dünya haritası', text: 'Renkler bölgelerin durumunu gösterir. Bir bölgeye bas; bilgileri açılır, sıçramayı oradan planlarsın.' },
     { target: '#tlBar', title: 'Zaman çizelgesi', text: 'Bir çağa bas, o yılın dünyasını haritada gör. Geçmişi değiştirdikçe bu çizgi de değişir.' },
@@ -725,7 +725,21 @@
       b.onclick = () => { CP.recruit(G, b.dataset.recruit); persistRun(); closeModal(); renderAll(); continueTurn(); };
     });
   }
+  // Tamamlanan kol: dünyadan gemiye yakıt gelir.
+  function showFuel(f) {
+    const s = CP.FUEL[f.k];
+    if (CINEMA && CP.sceneAudio.initialized) CP.sceneAudio.cue('positive');
+    G.fuelShown = (G.fuelShown || 0) + 1; persistRun(); renderAll();
+    const fmt = (n) => n.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+    modal(`<p class="eyebrow orgRise">▲ ${s.rise.toLocaleUpperCase('tr-TR')} · YAKIT İKMALİ</p><h2>${s.title}</h2>${CINEMA ? CP.story.dialogue('cem', s.text) : `<p class="lead">${s.text}</p>`}
+      <div class="stat"><span>Çekirdek enerjisi</span><b>+${fmt(f.gain)}</b></div>
+      <div class="mfoot"><span></span><button class="primary" id="mNext">Devam</button></div>`);
+    $('#mNext').onclick = () => { closeModal(); continueTurn(); };
+    $('#mNext').focus();
+  }
   function continueTurn() {
+    const fuel = CP.nextFuel(G);
+    if (fuel) return showFuel(fuel);
     if (CP.recruitDue(G)) return showRecruit();
     const org = CP.nextOrg(G);
     if (org) return showOrg(org);
@@ -757,6 +771,7 @@
     CP.cinema?.close(); closeModal(); renderAll();
     if (G.over) return showEnd();
     if (guidedStart) return firstBriefing();
+    if (CP.nextFuel(G)) return showFuel(CP.nextFuel(G));
     if (CP.recruitDue(G)) return showRecruit();
     const org = CP.nextOrg(G);
     if (org) return showOrg(org);
@@ -781,7 +796,7 @@
         if (G.over) return showEnd();
         modal(`<h2>Mektuba Yanıt</h2>${CINEMA ? CP.story.dialogue('cem', 'Yanıtını kayda geçirdim. Şimdi aynı bölgenin önceki ve yeni ölçümlerine bakalım; her kazanımın başka bir etkisi olabilir.') : ''}<div class="chain"><div><i>${ctx.year}</i>${CP.fill(o.log, ctx.iv.region, ctx.year)}</div></div>
           ${localBlock(ctx.iv.region, rep)}<div class="mfoot"><button id="mClose">Devam</button></div>`);
-        $('#mClose').onclick = closeModal;
+        $('#mClose').onclick = () => { closeModal(); if (CP.nextFuel(G)) showFuel(CP.nextFuel(G)); };
       };
     });
     $('#mClose').onclick = () => { G.lastLetter = G.jumps; persistRun(); closeModal(); };
@@ -801,7 +816,7 @@
       if (G.over) return showEnd(rep);
       if (rep.diff.newMilestones.length) sfx.mile(); else sfx.good();
       modal(`<h2>${c.name}</h2>${reportBody(rep)}<div class="mfoot"><button id="mClose">Tamam</button></div>`);
-      $('#mClose').onclick = closeModal;
+      $('#mClose').onclick = () => { closeModal(); if (CP.nextFuel(G)) showFuel(CP.nextFuel(G)); };
     };
     if (!c.target) return fire();
     modal(`<h2>${c.name}</h2><p class="lead">${c.desc}</p><div class="optGrid regionChoices">${REGIONS.map((r) => `<button class="opt" data-t="${r.id}"><b>${r.name}</b></button>`).join('')}</div><div class="mfoot"><button id="mClose">Vazgeç</button></div>`);
