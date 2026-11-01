@@ -259,7 +259,7 @@
     if (G.tl.catastrophe) { g.innerHTML = '<b class="dn">Bu tarih kıyametle bitiyor.</b> Tarih Kitabı\'ndan felaketi seç ya da son bir sıçrama yap.'; return; }
     if (!CP.canAct(G)) {
       g.innerHTML = CP.extractable(G).length
-        ? '<b class="dn">Gemide kimse kalmadı.</b> Sol panelden bir üyeyi <b>Geri al</b>, ya da kart oyna.'
+        ? '<b class="dn">Gemide kimse kalmadı.</b> Sol panelden bir üyeyi <b>Geri al</b>, ya da kart oyna. Geri almak bir tur sayılır.'
         : '<b class="dn">Tim tükendi.</b>';
       return;
     }
@@ -268,7 +268,7 @@
     else if (G.jumps === 1) { const focus = CP.nextFocus ? CP.nextFocus(G) : null; g.innerHTML = focus ? `<b>${focus.label}.</b> ${focus.message.split('. ')[0].replace(/\.$/, '')}.` : '<b>2. adım:</b> Üç kol da dolmalı: Teknoloji, Ekosistem, Barış. Hangisi geride, ona bak.'; }
     else if (G.jumps === 2) g.innerHTML = '<b>İpucu:</b> <b>Tarih Kitabı</b>\'ndaki felaketleri seçip önlemeye gidebilirsin.';
     else if (G.jumps === 3) g.innerHTML = '<b>İpucu:</b> Akımlar kendi kendine yayılır. Kültürü yüksek bölgelerden başlatmak daha hızlıdır.';
-    else g.innerHTML = 'Hedef: <b>Üç kolu da %100\'e çıkar.</b> Enerjin ve timin bitmeden yetiştir.';
+    else g.innerHTML = `Hedef: <b>Üç kolu da %100'e çıkar.</b> Yeni üye ${CP.recruitIn(G)} tur sonra.`;
   }
 
   function renderAll() {
@@ -630,7 +630,6 @@
     modal(`${rep.tutorial ? '<p class="eyebrow">İLK SIÇRAMA TAMAMLANDI</p>' : ''}<h2>Kelebek Raporu</h2>${reportBody(rep)}
       ${rep.tutorial ? '<p class="tutorialNote">İlk izin oluştu. Şimdi üç hedef kolundan hangisinin geride olduğuna bak; sonraki bölgeyi, çağı ve görevi sen seçeceksin.</p>' : ''}
       ${G.tl.catastrophe ? `<div class="warn"><b>Bu tarih ${G.tl.catastrophe.y} yılında kıyametle bitiyor:</b> ${CATA[G.tl.catastrophe.type]}. Son Seans başladı.</div>` : ''}
-      ${rep.volunteer ? `<p class="up">Bilinçlenen dünyadan yeni bir gönüllü geldi: ${ROLES[rep.volunteer].name}.</p>` : ''}
       <h3>Sonraki görev için bir kart al ${G.hand.length >= 4 ? '(elin dolu)' : ''}</h3><div class="optGrid">${cards.map((c) => `<button class="card ${c.color}" data-off="${c.id}" ${G.hand.length >= 4 ? 'disabled' : ''}><b>${c.name}</b>${c.desc}</button>`).join('')}</div>
       <div class="mfoot"><button id="mClose">Kartsız devam</button></div>`);
     document.querySelectorAll('[data-off]').forEach((b) => { b.onclick = () => { CP.takeOffer(G, b.dataset.off); afterTurn(); }; });
@@ -640,7 +639,7 @@
   // İlk görevden sonra komuta ekranını bölge bölge tanıtır.
   const tourSteps = [
     { target: '#resourceHud .hudEnergy', title: 'Enerji', text: 'Her sıçrama enerji harcar, görevden sonra biraz geri gelir. Biterse döngü biter.' },
-    { target: '#resourceHud .hudCrew', title: 'Ekibin', text: 'Her göreve bir uzman gider ve o çağda kalır. Bilim, Araştırma ve Eğitim uzmanları farklı görevler yapar.' },
+    { target: '#resourceHud .hudCrew', title: 'Ekibin', text: 'Her göreve bir uzman gider ve o çağda kalır. İki turda bir yeni üye seçersin; arada kişi gerekirse geçmişten geri alırsın, ama bu pahalıdır.' },
     { target: '#resourceHud .hudPrototype', title: 'Asıl hedefin', text: 'Teknoloji, Ekosistem ve Barış. Üçü de %100 olunca ikinci makine tamamlanır ve oyunu kazanırsın.' },
     { target: '#pulse', title: 'Dünya Nabzı', text: 'Her hedefi beşer gösterge besler; burada iyileşen şey hedefi de doldurur. Bir göstergenin çubuğu dolunca dünya örgütü kurulur ve yönünü sen seçersin.' },
     { target: '#mapWrap', title: 'Dünya haritası', text: 'Renkler bölgelerin durumunu gösterir. Bir bölgeye bas; bilgileri açılır, sıçramayı oradan planlarsın.' },
@@ -714,7 +713,20 @@
       };
     });
   }
+  // Yeni üye seçimi: her rol için sıradaki kişi gösterilir.
+  function showRecruit() {
+    const line = 'Komutan, dünyanın dört bir yanından gönüllü başvuruları var. Bu tur bir kişiyi gemiye alabiliriz. Sıradaki görev için kime ihtiyacın var?';
+    modal(`<p class="eyebrow">YENİ ÜYE · ${CP.TUNE.recruitEvery} TURDA BİR</p><h2>Ekibe kim katılsın?</h2>${CINEMA ? CP.story.dialogue('cem', line) : `<p class="lead">${line}</p>`}
+      <div class="optGrid recruitGrid">${Object.entries(ROLES).map(([k, r]) => {
+        const person = CP.story?.cast[CP.story.crewId(k, sentOf(k) + G.crew[k])];
+        return `<button class="opt recruit" data-recruit="${k}">${person ? `<img src="assets/cinema/${person.image}" alt=""><b>${person.name}</b>` : ''}<span class="recruitRole">${r.name}</span><span class="missionDesc">Şu an ${G.crew[k]} kişi var. Gemideyken ${r.onBase.replace('Üste kaldığında: ', '')}</span></button>`;
+      }).join('')}</div>`);
+    document.querySelectorAll('[data-recruit]').forEach((b) => {
+      b.onclick = () => { CP.recruit(G, b.dataset.recruit); persistRun(); closeModal(); renderAll(); continueTurn(); };
+    });
+  }
   function continueTurn() {
+    if (CP.recruitDue(G)) return showRecruit();
     const org = CP.nextOrg(G);
     if (org) return showOrg(org);
     const ctx = CP.nextLetter(G);
@@ -745,6 +757,7 @@
     CP.cinema?.close(); closeModal(); renderAll();
     if (G.over) return showEnd();
     if (guidedStart) return firstBriefing();
+    if (CP.recruitDue(G)) return showRecruit();
     const org = CP.nextOrg(G);
     if (org) return showOrg(org);
     const ctx = CP.nextLetter(G);

@@ -145,3 +145,26 @@ test('İlk görev kendi sahnelerini kullanır, seçenekleri kayıttan geri gelir
   CP.jump(G, plan);
   assert.deepEqual(CP.store.unpack(CP.store.pack(G)).ivs[0].choices.map((c) => c.t), plan.choices.map((c) => c.t));
 });
+
+test('Yeni üye: iki turda bir seçilir, kayda geçer, son kişi gidince oyun erken bitmez', () => {
+  const { CP } = globalThis;
+  const G = CP.newGame(7);
+  assert.equal(CP.recruitDue(G), false, 'Başlangıçta yok');
+  CP.jump(G, mission(G));
+  assert.equal(CP.recruitDue(G), false, '1. tur sonunda yok');
+  assert.equal(CP.recruit(G, 'sci'), false, 'Vakti gelmeden alınamaz');
+  assert.equal(CP.recruitIn(G), 1);
+  CP.jump(G, mission(G));
+  assert.equal(CP.recruitDue(G), true, '2. tur sonunda var');
+  const crew = G.crew.edu;
+  assert.equal(CP.recruit(G, 'edu'), true);
+  assert.equal(G.crew.edu, crew + 1, 'Seçilen rol artar');
+  assert.equal(CP.recruit(G, 'edu'), false, 'Aynı turda ikinci kez alınamaz');
+  assert.equal(CP.store.unpack(CP.store.pack(G)).lastRecruit, G.jumps);
+  const H = CP.newGame(7);
+  CP.jump(H, mission(H)); CP.jump(H, mission(H));
+  H.lastRecruit = undefined; H.over = null;
+  for (const k of Object.keys(H.crew)) H.crew[k] = 0;
+  assert.equal(CP.recruitDue(H), true);
+  assert.ok(CP.recruit(H, 'res') && CP.canAct(H), 'Gemi boşken de seçilen üye göreve çıkabilir');
+});

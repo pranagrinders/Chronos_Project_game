@@ -78,7 +78,7 @@ try{
  for(let seed=0;seed<25&&!letterRaw;seed++){
   const run=C.newGame(seed),first=C.firstMission(run);first.choices=C.stages(run,first).map(s=>s.opts[0]);C.jump(run,first);C.takeOffer(run,null);
   const second={...C.offerMissions(run,'bav',2000)[0],region:'bav'};second.choices=C.stages(run,second).map(s=>s.opts[0]);C.jump(run,second);C.takeOffer(run,null);
-  if(!run.over&&C.nextLetter(run))letterRaw=C.store.pack(run);
+  if(!run.over&&C.nextLetter(run)){run.lastRecruit=run.jumps;letterRaw=C.store.pack(run);}
  }
  assert.ok(letterRaw,'Letter fixture not found');
 }finally{fixture.dom.window.close();}

@@ -8,17 +8,25 @@ globalThis.CP = globalThis.CP || {};
     dara:{name:'Dara',role:'Çoban · Kızılırmak havzası, 430',image:'dara.png'},
   };
   const crew = {
-    res: [['arastirmaci-1', 'Selim Aydın', 'Alan araştırmacısı · Temporal Shift'], ['arastirmaci-2', 'Naz Demir', 'Alan araştırmacısı · Temporal Shift']],
-    sci: [['bilim-1', 'Dr. Ada Yılmaz', 'Bilim insanı · Temporal Shift'], ['bilim-2', 'Dr. Kaan Erdem', 'Bilim insanı · Temporal Shift']],
-    edu: [['egitim-1', 'Elif Şahin', 'Eğitmen · Temporal Shift'], ['egitim-2', 'Murat Koç', 'Eğitmen · Temporal Shift']],
+    res: ['Alan araştırmacısı · Temporal Shift', ['arastirmaci-1', 'Selim Aydın', 'Emre Kaya', 'Tolga Şen', 'Ozan Tuna'], ['arastirmaci-2', 'Naz Demir', 'Zeynep Arslan', 'Sevgi Tan', 'Gül Aksoy']],
+    sci: ['Bilim insanı · Temporal Shift', ['bilim-1', 'Dr. Ada Yılmaz', 'Dr. Ece Korkmaz', 'Dr. Selin Aksu', 'Dr. Defne Kurt'], ['bilim-2', 'Dr. Kaan Erdem', 'Dr. Orhan Güven', 'Dr. Haluk Tekin', 'Dr. Cemal Uz']],
+    edu: ['Eğitmen · Temporal Shift', ['egitim-1', 'Elif Şahin', 'Merve Yıldız', 'Ayşe Polat', 'Esra Çelik'], ['egitim-2', 'Murat Koç', 'Hasan Öztürk', 'İbrahim Aslan', 'Yusuf Demirel']],
   };
   const portraits = new Set();
-  for (const list of Object.values(crew)) for (const [id, name, role] of list) {
-    cast[id] = { name, role, image: id + '.png' };
-    if (globalThis.Image) { const img = new Image(); img.onload = () => portraits.add(id); img.src = `assets/cinema/${id}.png`; }
+  // Aynı portre farklı adlarla kullanılır; ad, portredeki kişinin cinsiyetine uyar.
+  const people = {};
+  for (const [key, [role, a, b]] of Object.entries(crew)) {
+    people[key] = [];
+    for (let i = 1; i < a.length; i++) for (const [p, name] of [[a[0], a[i]], [b[0], b[i]]]) {
+      const id = i === 1 ? p : `${p}~${i}`;
+      cast[id] = { name, role, image: p + '.png', portrait: p };
+      people[key].push(id);
+    }
+    for (const p of [a[0], b[0]]) if (globalThis.Image) { const img = new Image(); img.onload = () => portraits.add(p); img.src = `assets/cinema/${p}.png`; }
   }
   // Göreve giden uzman. n: bu rolden daha önce kaç kişi gitti.
-  const crewMember = (role, n) => { const list = crew[role] || [], pick = list[n % (list.length || 1)]; return pick && portraits.has(pick[0]) ? pick[0] : null; };
+  const crewId = (role, n) => { const list = people[role] || []; return list[n % (list.length || 1)]; };
+  const crewMember = (role, n) => { const id = crewId(role, n); return id && portraits.has(cast[id].portrait) ? id : null; };
   const requests = {
     vakif_sci:['cem','Bilgi bir insanla birlikte kaybolmamalı. Burada kuşaklar boyunca çalışacak bir araştırma merkezi kuralım.'],
     vakif_res:['leyla','Ölçmeden karar veriyoruz. Buraya bir gözlem ekibi bırakırsak hem nehri tanırız hem diğer kuruluşları destekleriz.'],
@@ -139,5 +147,5 @@ globalThis.CP = globalThis.CP || {};
     const draw=t=>{if(cancelled||!node.isConnected)return;const f=actionFrame(t,kind);node.style.setProperty('--action-progress',String(f.e));node.querySelector('.storyRoute').style.strokeDashoffset=String(280-f.route);node.querySelector('[data-action-paper]').setAttribute('transform',`translate(${f.paperX} ${f.paperY})`);node.querySelector('[data-action-gate] path').style.strokeDasharray='180';node.querySelector('[data-action-gate] path').style.strokeDashoffset=String((1-f.e)*180);if(f.p<1&&!reduce)requestAnimationFrame(now=>draw((now-start)/1000));};
     draw(reduce?2.8:0);return()=>{cancelled=true;};
   }
-  CP.story={cast,crewMember,prologue,tutorialHint,choiceSummary,sceneImg,request,dialogue,bindVoices,stopVoice,stageSpeaker,stageLine,visual:visualFor,choiceLead,art,animateArt,actionFrame,esc,muted:false};
+  CP.story={cast,crewMember,crewId,prologue,tutorialHint,choiceSummary,sceneImg,request,dialogue,bindVoices,stopVoice,stageSpeaker,stageLine,visual:visualFor,choiceLead,art,animateArt,actionFrame,esc,muted:false};
 })();

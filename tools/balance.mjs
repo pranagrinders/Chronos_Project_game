@@ -42,6 +42,7 @@ function bot(greedy, seed) {
   let orgTotal = 0;
   while (!G.over && guard++ < 50) {
     let plan;
+    if (CP.recruitDue(G)) CP.recruit(G, Object.keys(G.crew).sort((a, b) => G.crew[a] - G.crew[b])[0]);
     for (const s of CP.SHIFTS) if (Math.random() < 0.7) CP.toggleShift(G, s.id);
     if (greedy) {
       let best = -1e9;

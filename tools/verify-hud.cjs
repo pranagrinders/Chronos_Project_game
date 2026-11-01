@@ -76,7 +76,7 @@ try{
  const C=fixture.w.CP;
  for(let seed=1;seed<=60&&!letterRaw;seed++){
   const G=C.newGame(seed);for(let n=0;n<2;n++){const p=C.firstMission(G);p.choices=C.stages(G,p).map(s=>s.opts[0]);C.jump(G,p);}
-  if(!G.over&&C.nextLetter(G)){G.saveId='hud-letter-'+seed;G.tutorialGuided=false;C.store.write(G);letterRaw=fixture.w.localStorage.getItem(C.store.key);}
+  if(!G.over&&C.nextLetter(G)){G.lastRecruit=G.jumps;G.saveId='hud-letter-'+seed;G.tutorialGuided=false;C.store.write(G);letterRaw=fixture.w.localStorage.getItem(C.store.key);}
  }
  assert.ok(letterRaw,'letter fixture');
 }finally{fixture.dom.window.close();}

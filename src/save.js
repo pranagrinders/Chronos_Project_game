@@ -2,7 +2,7 @@
 globalThis.CP = globalThis.CP || {};
 (() => {
   const KEY = 'chronos.run.v1', BACKUP = 'chronos.run.previous.v1', VERSION = 1;
-  const fields = ['seed', 'energy', 'crew', 'vets', 'ivs', 'hand', 'jumps', 'protoBonus', 'patch', 'nextId', 'doomed', 'over', 'offers', 'letters', 'lastLetter', 'orgs', 'lastOrg', 'shift', 'ach'];
+  const fields = ['seed', 'energy', 'crew', 'vets', 'ivs', 'hand', 'jumps', 'protoBonus', 'patch', 'nextId', 'doomed', 'over', 'offers', 'letters', 'lastLetter', 'orgs', 'lastOrg', 'shift', 'ach', 'lastRecruit'];
   const optionKey = (o) => o.t + '\n' + o.log;
   const options = new Map([
     ...CP.FIELD.flatMap((s) => s.opts), ...CP.MISSIONS.flatMap((m) => m.crisis.opts),
@@ -74,6 +74,7 @@ globalThis.CP = globalThis.CP || {};
     if (ids.size !== ivs.length || ivs.some((iv) => +iv.id.slice(1) >= d.nextId)) return fail();
     if (d.jumps !== ivs.filter((iv) => iv.kind === 'drop' || iv.kind === 'crack').length) return fail();
     if (d.orgs != null) for (const [key, c] of Object.entries(d.orgs)) if (!CP.ORGS.find((o) => o.key === key)?.opts[c]) return fail();
+    if (d.lastRecruit != null && (!integer(d.lastRecruit) || d.lastRecruit > d.jumps)) return fail();
     if (d.lastOrg != null && (!integer(d.lastOrg) || d.lastOrg > d.jumps)) return fail();
     if (d.shift != null && (!Array.isArray(d.shift) || d.shift.length > 2 || d.shift.some((id) => !CP.SHIFTS.some((x) => x.id === id)))) return fail();
     if (d.ach != null) {

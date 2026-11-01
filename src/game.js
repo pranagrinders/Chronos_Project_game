@@ -5,7 +5,7 @@ globalThis.CP = globalThis.CP || {};
   const clamp = CP.clamp;
 
   // Prototip kollari: baslangic tarihi ile hedef arasi olcekleme (tools/balance.mjs ile ayarlanir)
-  CP.TUNE = { gain: { tech: 122, eco: 39, peace: 37 }, alignPerHit: 0.08, supply: 2, orgPower: 0.5, orgQuota: 2 };
+  CP.TUNE = { gain: { tech: 140, eco: 45, peace: 42 }, alignPerHit: 0.08, supply: 2, orgPower: 0.5, orgQuota: 2, recruitEvery: 2 };
   const BASE = 10;
   CP.TRACKS = { tech: 'Teknoloji', eco: 'Ekosistem', peace: 'Barış' };
 
@@ -222,16 +222,23 @@ globalThis.CP = globalThis.CP || {};
     if (G.crew.sci > 0) G.protoBonus += 1.5;
     const regen = 1 + (G.tl.final.global.renew || 0) * 0.05;
     G.energy = Math.min(100, G.energy + regen);
-    let volunteer = null;
-    if (G.jumps % 3 === 0 && G.tl.final.global.awareness > 18) volunteer = addVolunteer(G);
     const rep = {
-      iv, before, after: G.tl, diff: CP.diff(before, G.tl), protoBefore, protoAfter: CP.proto(G), regen, volunteer,
+      iv, before, after: G.tl, diff: CP.diff(before, G.tl), protoBefore, protoAfter: CP.proto(G), regen,
       chain: G.tl.log.filter((e) => iv && e.iv === iv.id),
     };
     G.offers = drawOffers(G);
     checkEnd(G);
     return rep;
   }
+
+  // Yeni üye: her iki turda bir oyuncu bir uzman seçer. Arada kişi gerekirse geçmişten geri alınır.
+  CP.recruitDue = (G) => !G.over && G.jumps > 0 && G.jumps % CP.TUNE.recruitEvery === 0 && G.lastRecruit !== G.jumps;
+  CP.recruitIn = (G) => CP.TUNE.recruitEvery - (G.jumps % CP.TUNE.recruitEvery);
+  CP.recruit = (G, role) => {
+    if (!CP.recruitDue(G) || !ROLES[role]) return false;
+    G.crew[role]++; G.lastRecruit = G.jumps;
+    return true;
+  };
 
   function addVolunteer(G) {
     const k = Object.keys(G.crew).sort((a, b) => G.crew[a] - G.crew[b])[0];
@@ -306,7 +313,7 @@ globalThis.CP = globalThis.CP || {};
     const end = (why) => { G.over = G.tl.catastrophe ? G.tl.catastrophe.type : why; };
     if (G.energy < CP.minCost() && !G.hand.includes('yakit')) return end('energy');
     const hasCrew = Object.values(G.crew).some((v) => v > 0);
-    if (!hasCrew && !CP.extractable(G).length && !G.hand.includes('gonullu')) end('crew');
+    if (!hasCrew && !CP.recruitDue(G) && !CP.extractable(G).length && !G.hand.includes('gonullu')) end('crew');
   }
   CP.canAct = (G) => Object.values(G.crew).some((v) => v > 0);
 })();
