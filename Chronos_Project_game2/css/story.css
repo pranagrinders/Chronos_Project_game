@@ -233,3 +233,41 @@ body.storyMode #cinema p,body.storyMode #cinema small,body.storyMode .storyDialo
 .tourActions{display:flex;justify-content:space-between;align-items:center;gap:12px}
 #tour #tourSkip{background:none;border:0;color:#b9c6b5;font-size:12px;padding:8px 0}#tour #tourNext{min-height:40px;padding:8px 20px;font-size:13px}
 @media(prefers-reduced-motion:reduce){.tourHole,.tourTip{transition:none}}
+/* Dünya Nabzı */
+body:not(.storyMode) #pulse,.shiftBar[hidden]{display:none}
+#pulse{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:8px}
+.pulseGroup{border-top:2px solid var(--track);padding-top:4px;min-width:0}.pulseGroup[data-track=tech]{--track:#6fc7cf}.pulseGroup[data-track=eco]{--track:#8ccf8a}.pulseGroup[data-track=peace]{--track:#d9b56e}
+.pulseGroup>b{display:block;font-size:10px;font-weight:700;letter-spacing:.6px;color:var(--track);margin-bottom:2px}
+.pulseGroup>div{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px}
+.pulseChip{position:relative;display:block;min-width:0;padding-bottom:3px;cursor:help}
+.pulseChip small{display:block;font-size:8.5px;line-height:1.15;color:#a9b9b3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pulseChip em{display:block;font-style:normal;font-size:14px;font-weight:650;line-height:1.2;color:#eee8d6;font-variant-numeric:tabular-nums}.pulseChip u{text-decoration:none;font-size:11px;margin-left:2px}.pulseChip u.up{color:#8ce39a}.pulseChip u.dn{color:#ff9d84}
+.pulseChip i{position:absolute;left:0;bottom:0;height:2px;background:var(--track);opacity:.75}.pulseChip:before{content:'';position:absolute;left:0;right:0;bottom:0;height:2px;background:#ffffff14}
+.pulseChip.founded em:after{content:' ★';font-size:9px;color:var(--track)}
+.pulseChip.flash em{animation:pulseFlash 1.6s ease-out}
+@keyframes pulseFlash{0%{color:#fff4cd;text-shadow:0 0 14px #e8d1a5}100%{text-shadow:none}}
+/* Vardiya */
+.shiftBar{display:flex;align-items:stretch;gap:6px;margin:4px 0 6px}
+.shiftTitle{display:flex;flex-direction:column;justify-content:center;min-width:130px;padding-right:6px}.shiftTitle b{font-size:10px;letter-spacing:.8px;color:#d1c39c}.shiftTitle small{font-size:9px;color:#9fb0a9;margin-top:2px}
+.storyMode .shiftBar button{flex:1;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:1px;padding:4px 10px;background:#142126;border:1px solid #52645d;min-width:0;text-align:left}
+.shiftBar button b{font-size:11px;font-weight:650;color:#e6e1d1}.shiftBar button small{font-size:9px;color:#a9b9b3}
+.storyMode .shiftBar button.on{background:#3b3a24;border-color:#dbc79a;box-shadow:inset 3px 0 #c7b385}.shiftBar button.on small{color:#f0e0b8}
+.storyMode .shiftBar button:disabled{opacity:.5}
+#modalBox .shiftBar{margin:0 0 12px}
+/* Harita işaretleri */
+.popMark{font-family:Manrope,sans-serif;font-size:20px;font-weight:800;paint-order:stroke;stroke:#061014;stroke-width:3px;pointer-events:none;animation:popMark 1.5s ease-out both}.popMark.pos{fill:#8ce39a}.popMark.neg{fill:#ff8d75}
+@keyframes popMark{0%{opacity:0;transform:translateY(6px)}20%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+/* Hizalama */
+#align{position:fixed;inset:0;z-index:70;display:grid;place-items:center;background:#040a0de8;font-family:Manrope,sans-serif;padding:16px}
+.alignBox{width:min(620px,100%);background:#0d1b1f;border:1px solid #dbc79d88;padding:24px 28px;color:#e6e1d1;box-shadow:0 14px 50px #000c}
+#align .eyebrow{font-size:10px;letter-spacing:1.6px;color:#c7b385;margin:0 0 6px}
+#align h2{font-family:Barlow,Manrope,sans-serif;font-size:38px;font-weight:600;line-height:1.1;margin:0 0 8px;color:#f3eddc}
+#alignText{font-size:15px;line-height:1.55;min-height:46px;margin:0 0 14px}#alignText b{color:#f0e0b8}
+.alignPips{display:flex;gap:7px;margin-bottom:10px}.alignPips i{width:30px;height:5px;background:#ffffff22}.alignPips i.good{background:#8ce39a}.alignPips i.miss{background:#ff8d75}
+.alignTrack{position:relative;height:46px;background:#071114;border:1px solid #52645d;overflow:hidden}
+.alignZone{position:absolute;top:0;bottom:0;background:linear-gradient(180deg,#e4c77a,#b98f3f);box-shadow:0 0 18px #e4c77a88}
+.alignMarker{position:absolute;top:0;bottom:0;width:4px;margin-left:-2px;left:0;background:#eaffff;box-shadow:0 0 12px 3px #9ff4ff}
+.alignActions{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:16px}
+#align button{min-height:44px;font-size:13px}#align #alignSkip{background:none;border:0;color:#b9c6b5;padding:8px 0}#align .primary{min-width:190px;margin-left:auto;font-size:15px;font-weight:700}
+.orgGrid .opt{text-align:left}
+@media(max-width:900px){#pulse{grid-template-columns:1fr}.shiftTitle{min-width:84px}.shiftBar button{padding:4px 6px}}

@@ -147,21 +147,21 @@
       <p class="cHomeHint">Her kol %100 olduğunda ikinci prototip tamamlanır. Enerjin ve ekibin bitmeden üçünü birlikte ilerlet.</p>
       ${lastDrop ? `<div class="cHomeLegacy"><span>SON BIRAKTIĞIN KURULUŞ</span><b>${esc(CP.missionById(lastDrop.mission).name)}</b><p>${lastDrop.year} · ${esc(CP.REGIONS.find((r) => r.id === lastDrop.region).name)}</p><small>${legacyStatus}</small></div>` : ''}
       <button class="cText" id="cBook">Tarih Kitabı’nı aç ↗</button></aside>
-      <footer class="cSceneFoot"><span>GÖREVLER ARASINDA / KOMUTA MERKEZİ</span><span>Geçmişteki kuruluşlar ve kartlar harita ekranında.</span></footer>`, 'home', onMap);
+      <footer class="cSceneFoot"><span>GÖREVLER ARASINDA / KOMUTA MERKEZİ</span><span>Dünya Nabzı, vardiya ve kartlar harita ekranında.</span></footer>`, 'home', onMap);
     $('#cPlanNext').onclick = onPlan; $('#cMap').onclick = onMap; $('#cBook').onclick = onBook; sound('bridge');
   }
-  function briefing(G, plan, onStart) {
+  function briefing(G, plan, onStart, align) {
     const water = num(G.tl.final.regions.ana.water);
     mount(`${background()}<header class="cHeader">${brand}${tools(false)}</header>
-      <div class="cBriefCopy"><p class="cKicker">İLK GÖREV · SUYUN İZİ</p><h2>Nehri kurtar.</h2>
-      <p>2070’te Kızılırmak havzasının suyu <b>100 üzerinden ${water}</b>. Bugün yapacak bir şey yok. Çare, nehrin sağlıklı olduğu yılda: <b>M.S. 430</b>.</p>
-      <ol class="cBriefSteps"><li>Leyla’yı 430 yılına bırakırsın.</li><li>Leyla orada koruma alanı kurar. Zor anlarda <b>üç kararı sen verirsin</b>.</li><li>Tarih 2070’e kadar akar, nehrin ne olduğunu görürsün.</li></ol>
+      <div class="cBriefCopy"><p class="cKicker">İLK GÖREV · SUYUN İZİ</p><h2>Su Meclisi’ni kur.</h2>
+      <p>2070’te Kızılırmak havzasının suyu <b>100 üzerinden ${water}</b>. Karbonu 430’dan düzeltemezsin; o iş sanayi çağında. Ama suyu paylaşma kültürünü <b>M.S. 430</b>’da başlatabilirsin.</p>
+      <ol class="cBriefSteps"><li>Leyla’yı 430 yılına bırakırsın.</li><li>Leyla çoban ve çiftçilerle bir Su Meclisi kurar. Zor anlarda <b>üç kararı sen verirsin</b>.</li><li>Kural kuşaktan kuşağa geçer. Tarih 2070’e akar, suya ne olduğunu görürsün.</li></ol>
       <div class="cMissionFacts"><span><small>GİDECEĞİN YIL</small>M.S. 430</span><span><small>GİDEN KİŞİ</small>Leyla, araştırmacı</span><span><small>BEDEL</small>20 enerji</span></div>
       <button class="cPrimary" id="cTravel">M.S. 430’a git <span aria-hidden="true">↗</span></button></div>
-      <div class="cBriefLeyla">${researcher('Komutan, ben Leyla. Beni 430’a bırak, nehir kıyısında bir koruma alanı kurayım. Orada yaşayanlarla anlaşmam gerekecek. Zor anlarda kararı sana soracağım.')}<p class="cHudNote">Üstteki şeritte enerjin, gemideki ekibin ve üç hedefin var. Üçü de %100 olunca ikinci makine tamamlanır.</p></div>
+      <div class="cBriefLeyla">${researcher('Komutan, ben Leyla. Nehri çitle koruyamam; çit 1640 yıl dayanmaz. Ama suyu paylaşma kuralı dayanabilir. Beni 430’a bırak, zor anlarda kararı sana soracağım.')}<p class="cHudNote">Üstteki şeritte enerjin, gemideki ekibin ve üç hedefin var. Üçü de %100 olunca ikinci makine tamamlanır.</p></div>
       ${guide(0, '2070 · Gemide', 'Görevi oku, sonra geçmişe git.')}`, 'briefing', null);
     showState(G.tl.final); sound('valley');
-    $('#cTravel').onclick = () => travel(onStart);
+    $('#cTravel').onclick = () => (align ? align(() => travel(onStart)) : travel(onStart));
   }
   function travel(onArrive) {
     if (fast || reduced) return onArrive();
@@ -188,8 +188,8 @@
       <h2>${esc(step.title)}</h2>${researcher(line, speaker)}${prior}<p class="storyInstruction">${plan.tutorial ? 'Bir yolu seç. Ne olacağını yanda gör, sonra onayla.' : 'Bir yolu seç. Ekibin ne yapacağını gör, sonra onayla.'}</p>
       <div class="cChoices storyOptions" role="group" aria-label="${esc(step.title)} için yollar">${step.opts.map((o, i) => `<button class="cChoice" data-choice="${i}" aria-pressed="false"><img src="assets/cinema/${story.visual(o, plan).image}" alt="${esc(story.visual(o, plan).caption)}"><span class="storyOptionText"><span class="cChoiceNum">0${i + 1}</span><h3>${esc(o.t)}</h3><span>${esc(story.tutorialHint(plan, index, o) || CP.fill(o.log, plan.region, plan.year) + '.')}</span></span><span class="cChoiceArrow" aria-hidden="true">→</span></button>`).join('')}</div></section>
       <section class="storyPreview" aria-label="Seçtiğin yolun açıklaması"><div id="cChoiceVisual"><div class="storyArt storyWaiting"><img src="assets/cinema/${plan.tutorial ? 'anatolia-430' : 'bridge'}.png" alt="Görevin temsili sahnesi"><span>Önce bir yol seç.</span></div></div><div id="cChoiceDetails" aria-live="polite"><p class="cKicker">${labels[index]}</p><h3>Ne yapmamızı istiyorsun?</h3><p>Seçeneklerden birine dokunduğunda uygulayacağımız eylemi, faydasını ve bedelini burada göreceksin.</p></div>
-      <button class="cPrimary" id="cConfirm" disabled>Önce bir yol seç</button><p class="storyCommitNote">${index < 2 ? 'Bu adım yalnız hazırlık. Enerji henüz harcanmaz.' : `Bu son kararı onaylayınca ${CP.eraCost(G, plan.year)} enerji harcanır; 1 ${CP.ROLES[plan.role].name.toLocaleLowerCase('tr-TR')} geçmişte kalır.`}</p></section></div>
-      ${plan.tutorial ? guide(2, 'M.S. 430 · Kızılırmak kıyısı', `${['Leyla yeni vardı.', 'Bölge halkı tepkili.', 'Leyla yaşlandı.'][index]} ${index + 1}. kararı ver.`) : `<footer class="cSceneFoot"><span>${index < 2 ? 'HAZIRLIK · HENÜZ ENERJİ HARCANMADI' : `${CP.eraCost(G, plan.year)} ENERJİ · 1 UZMAN`}</span><span>Canlandırma eylemi anlatır. Sonucu tarih belirler.</span></footer>`}`, 'decision', onCancel);
+      <button class="cPrimary" id="cConfirm" disabled>Önce bir yol seç</button><p class="storyCommitNote">${index < 2 ? 'Bu adım yalnız hazırlık. Enerji henüz harcanmaz.' : `Bu son kararı onaylayınca ${decimal(CP.jumpCost(G, plan))} enerji harcanır; 1 ${CP.ROLES[plan.role].name.toLocaleLowerCase('tr-TR')} geçmişte kalır.`}</p></section></div>
+      ${plan.tutorial ? guide(2, 'M.S. 430 · Kızılırmak kıyısı', `${['Leyla yeni vardı.', 'Bölge halkı tepkili.', 'Leyla yaşlandı.'][index]} ${index + 1}. kararı ver.`) : `<footer class="cSceneFoot"><span>${index < 2 ? 'HAZIRLIK · HENÜZ ENERJİ HARCANMADI' : `${decimal(CP.jumpCost(G, plan))} ENERJİ · 1 UZMAN`}</span><span>Canlandırma eylemi anlatır. Sonucu tarih belirler.</span></footer>`}`, 'decision', onCancel);
     sound(plan.tutorial ? 'valley' : 'bridge');
     if (index === 0) CP.sceneAudio?.cue('arrival');
     let selected = null, cancelArt = () => {}, committed = false;

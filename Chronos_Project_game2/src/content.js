@@ -257,3 +257,93 @@ CP.EVENTS = [
   { id: 'pestisit', kind: 'major', from: 2000, to: 2050, once: true, p: 0.4, need: 'hasere', fx: { water: -8, agri: 4 }, text: [
     '{bolge}: Pestisit kullanımı tavan yaptı, yeraltı suları zehirlendi. Zincir 1880\'lerde başlamıştı.', '{bolge}: Tarım ilaçları {nehir} nehrinde tehlike sınırını aştı. Bir avcının yokluğu 100 yıl sonra fatura kesti.' ] },
 ];
+
+// İlk görev: 430'dan nehri fiziksel olarak değil, suyu paylaşma kültürünü korur. Etkisi Koruma görevine eşittir.
+{
+  const koruma = CP.MISSIONS.find((m) => m.id === 'koruma');
+  CP.MISSIONS.push({ ...koruma, id: 'meclis', name: 'Su Meclisi Kur', tutorialOnly: true,
+    desc: 'Çobanlar ve çiftçiler suyu birlikte paylaştırır. Kural kuşaktan kuşağa geçer.',
+    echoes: [
+      { after: 60, text: '{bolge}: Su Meclisi\'nin koruduğu {nehir} kıyılarına yaban hayatı geri döndü.', fx: { bio: 3 } },
+      { after: 200, text: '{bolge}: Su Meclisi\'nin kuralları, kurak yıllarda bölgeyi ayakta tuttu.', fx: { water: 3 } },
+    ] });
+}
+
+// Dünya Nabzı: her hedef kolunu besleyen beşer gösterge (bkz. sim.js rawTracks).
+CP.PULSE = {
+  tech: [{ key: 'tech', name: 'Bilim' }, { key: 'renew', name: 'Temiz enerji' }, { key: 'awareness', name: 'Bilinç' }, { key: 'waste', name: 'Sıfır atık' }, { key: 'resilience', name: 'Kent direnci' }],
+  eco: [{ key: 'bio', name: 'Yaban hayatı' }, { key: 'water', name: 'Tatlı su' }, { key: 'soil', name: 'Toprak' }, { key: 'ppm', name: 'Karbon', bad: true }, { key: 'ocean', name: 'Okyanus yükü', bad: true }],
+  peace: [{ key: 'wars', name: 'Savaş', bad: true }, { key: 'nuke', name: 'Nükleer risk', bad: true }, { key: 'unrest', name: 'İsyan', bad: true }, { key: 'military', name: 'Askeri bütçe', bad: true }, { key: 'food', name: 'Gıda', bad: false }],
+};
+
+// Dünya örgütleri: bir gösterge kotayı aşınca kurulur, oyuncu yönünü seçer.
+// quota: 2070 değerinin başlangıç tarihine göre iyileşmesi. wars için önlenen savaş sayısı.
+CP.ORGS = [
+  { key: 'tech', quota: 10, speaker: 'cem', name: 'Küresel Bilim Birliği', text: 'Bilim birikimi eşiği aştı. Ülkeler ortak laboratuvarlar kuruyor.', opts: [
+    { t: 'Patentleri herkese aç', note: 'Temiz enerji yayılır, sanayi şikâyet eder.', fx: { renew: 10, tech: 4, unrest: 2 } },
+    { t: 'Bilimi okullara taşı', note: 'Bilinç ve kültür güçlenir.', fx: { awareness: 8, culture: 4 } },
+    { t: 'Gemimiz için çalıştır', note: 'Teknoloji hedefi doğrudan +%3.', proto: 3 } ] },
+  { key: 'renew', quota: 12, speaker: 'cem', name: 'Dünya Enerji Kooperatifleri Birliği', text: 'Temiz enerji payı kotayı aştı. Kooperatifler dünya çapında birleşiyor.', opts: [
+    { t: 'Kömür santrallerini kapat', note: 'Sanayi baskısı düşer, gerginlik artar.', fx: { industry: -8, renew: 8, unrest: 3 } },
+    { t: 'Yoksul bölgelere dağıt', note: 'Gıda güçlenir, isyan azalır.', fx: { renew: 5, food: 4, unrest: -3 } },
+    { t: 'Çekirdeğe enerji aktar', note: 'Gemiye +6 enerji.', energy: 6 } ] },
+  { key: 'awareness', quota: 8, speaker: 'leyla', name: 'Dünya Ekolojik Eğitim Konseyi', text: 'Ekolojik bilinç eşiği geçti. Öğretmenler sınır tanımadan örgütleniyor.', opts: [
+    { t: 'Müfredatı zorunlu yap', note: 'Bilinç artar, tüketim düşer.', fx: { awareness: 8, consumption: -6 } },
+    { t: 'Sanat ve medyaya taşı', note: 'Kültür güçlenir.', fx: { awareness: 4, culture: 6 } },
+    { t: 'Gönüllü yetiştir', note: 'Gemiye 1 yeni uzman katılır.', crew: 1 } ] },
+  { key: 'waste', quota: 10, speaker: 'leyla', name: 'Küresel Sıfır Atık Ağı', text: 'Atık döngüsü kotayı aştı. Kentler ortak bir ağ kuruyor.', opts: [
+    { t: 'Tek kullanımlık plastiği yasakla', note: 'Atık ve tüketim düşer, gerginlik artar.', fx: { waste: 8, consumption: -4, unrest: 2 } },
+    { t: 'Mahalle onarım atölyeleri', note: 'Atık düşer, toprak güçlenir.', fx: { waste: 5, soil: 4 } },
+    { t: 'Atıktan yakıt üret', note: 'Gemiye +5 enerji.', energy: 5 } ] },
+  { key: 'resilience', quota: 8, speaker: 'leyla', name: 'İklim Dirençli Kentler Birliği', text: 'Kent direnci eşiği geçti. Belediyeler bilgi paylaşmaya başladı.', opts: [
+    { t: 'Kıyı kentlerini önceliklendir', note: 'Kent direnci büyük ölçüde artar.', fx: { resilience: 9 } },
+    { t: 'Gölge ve su tutan mahalleler', note: 'Su ve yaban hayatı da güçlenir.', fx: { resilience: 5, bio: 3, water: 3 } },
+    { t: 'Afet fonunu paylaştır', note: 'İsyan azalır.', fx: { unrest: -5, resilience: 3 } } ] },
+  { key: 'bio', quota: 8, speaker: 'leyla', name: 'Dünya Yaban Hayatı Konseyi', text: 'Biyoçeşitlilik kotayı aştı. Ülkeler ortak koruma ağı istiyor.', opts: [
+    { t: 'Kıtalar arası koridorlar aç', note: 'Yaban hayatı artar, tarım baskısı düşer, gerginlik artar.', fx: { bio: 8, agri: -3, unrest: 2 } },
+    { t: 'Yönetimi yerel halka ver', note: 'Yaban hayatı artar, isyan azalır.', fx: { bio: 5, unrest: -3 } },
+    { t: 'Gen bankası kur', note: 'Toprak güçlenir, Teknoloji hedefi +%1.', fx: { bio: 3, soil: 3 }, proto: 1 } ] },
+  { key: 'water', quota: 8, speaker: 'leyla', name: 'Dünya Su Bilinçliliği Örgütü', text: 'Su tüketimi kotanın altına indi. Bu başarıyla bir dünya örgütü kuruldu.', opts: [
+    { t: 'Küresel su kotası yasası', note: 'Su çok güçlenir, tarım baskısı düşer, gerginlik artar.', fx: { water: 9, agri: -4, unrest: 3 } },
+    { t: 'Su meclislerini yay', note: 'Su ve kültür güçlenir, isyan azalır.', fx: { water: 5, culture: 4, unrest: -2 } },
+    { t: 'Su teknolojisine yatır', note: 'Bilim birikimi artar.', fx: { water: 3, tech: 5 } } ] },
+  { key: 'soil', quota: 7, speaker: 'leyla', name: 'Küresel Toprak Konfederasyonu', text: 'Toprak verimi kotayı aştı. Çiftçi birlikleri tek çatıda toplanıyor.', opts: [
+    { t: 'Tek tip tarıma vergi koy', note: 'Tarım baskısı düşer, gerginlik artar.', fx: { soil: 8, agri: -5, unrest: 2 } },
+    { t: 'Çiftçi okulları aç', note: 'Toprak ve gıda güçlenir.', fx: { soil: 5, food: 5 } },
+    { t: 'Toprağı karbon deposu yap', note: 'Toprak ve bilinç güçlenir.', fx: { soil: 3, awareness: 4 } } ] },
+  { key: 'ppm', quota: 35, speaker: 'cem', name: 'Dünya Karbon Konseyi', text: 'Atmosferdeki karbon kotanın altına indi. Ülkeler ilk kez aynı masada.', opts: [
+    { t: 'Küresel karbon vergisi', note: 'Sanayi baskısı düşer, gerginlik artar.', fx: { industry: -8, env: 6, unrest: 4 } },
+    { t: 'Dünya ormanları programı', note: 'Yaban hayatı ve su güçlenir.', fx: { bio: 5, water: 3 } },
+    { t: 'Karbon fonundan yakıt al', note: 'Gemiye +6 enerji.', energy: 6 } ] },
+  { key: 'ocean', quota: 10, speaker: 'leyla', name: 'Okyanus İttifakı', text: 'Okyanus yükü kotanın altına indi. Kıyı ülkeleri ittifak kurdu.', opts: [
+    { t: 'Açık denizleri koru', note: 'Okyanus yükü çok düşer.', fx: { ocean: -10 } },
+    { t: 'Balıkçı kooperatifleri kur', note: 'Okyanus yükü düşer, gıda güçlenir.', fx: { ocean: -5, food: 3 } },
+    { t: 'Plastik toplama filosu', note: 'Okyanus yükü ve atık düşer.', fx: { ocean: -4, waste: 4 } } ] },
+  { key: 'wars', quota: 2, speaker: 'cem', name: 'Dünya Barış Konseyi', text: 'Yeterince savaşı önledin. Dünya barışı, ülkelerin çevreciliğe yönelmesine yardımcı oldu. Bu enerjiyi nereye akıtalım?', opts: [
+    { t: 'Silah bütçesini iklime aktar', note: 'Askeri bütçe düşer, çevre bütçesi artar.', fx: { military: -10, env: 8 } },
+    { t: 'Su paylaşım anlaşmaları', note: 'Su güçlenir, isyan azalır.', fx: { water: 5, unrest: -5 } },
+    { t: 'Silah fabrikalarını dönüştür', note: 'Sanayi baskısı düşer, temiz enerji artar.', fx: { industry: -4, renew: 6 } } ] },
+  { key: 'nuke', quota: 5, speaker: 'cem', name: 'Nükleer Silahsızlanma Anlaşması', text: 'Nükleer risk kotanın altına indi. Süper güçler masaya oturdu.', opts: [
+    { t: 'Başlıkları sök', note: 'Askeri bütçe düşer, gerginlik artar.', fx: { military: -8, unrest: 2 } },
+    { t: 'Diplomasiyi kurumsallaştır', note: 'İsyan azalır, kültür güçlenir.', fx: { unrest: -5, culture: 3 } },
+    { t: 'Reaktörleri gemiye bağla', note: 'Gemiye +6 enerji.', energy: 6 } ] },
+  { key: 'unrest', quota: 6, speaker: 'leyla', name: 'Küresel Adalet Platformu', text: 'İsyan riski kotanın altına indi. Halk hareketleri ortak bir sese kavuştu.', opts: [
+    { t: 'İklim adaleti fonu', note: 'İsyan azalır, gıda güçlenir.', fx: { unrest: -6, food: 3 } },
+    { t: 'Yerel meclisleri güçlendir', note: 'İsyan azalır, kültür güçlenir.', fx: { unrest: -4, culture: 4 } },
+    { t: 'Gönüllü çağrısı yap', note: 'Gemiye 1 yeni uzman katılır.', crew: 1 } ] },
+  { key: 'military', quota: 5, speaker: 'cem', name: 'Silahsızlanma Bloku', text: 'Askeri bütçeler kotanın altına indi. Ülkeler blok kurmaya başladı.', opts: [
+    { t: 'Bütçeyi eğitime aktar', note: 'Askeri bütçe düşer, bilinç artar.', fx: { military: -6, awareness: 6 } },
+    { t: 'Gizli harcamaları ifşa et', note: 'Askeri bütçe çok düşer, gerginlik artar.', fx: { military: -8, unrest: 3 } },
+    { t: 'Savunma araştırmasını sivile çevir', note: 'Bilim ve temiz enerji güçlenir.', fx: { tech: 5, renew: 3 } } ] },
+  { key: 'food', quota: 8, speaker: 'leyla', name: 'Dünya Gıda Güvenliği Örgütü', text: 'Gıda güvenliği kotayı aştı. Kıtlık artık kader sayılmıyor.', opts: [
+    { t: 'Ortak tohum bankası', note: 'Gıda ve yaban hayatı güçlenir.', fx: { food: 7, bio: 2 } },
+    { t: 'Hayvancılığı azalt', note: 'Tarım baskısı düşer, su güçlenir, gerginlik artar.', fx: { agri: -6, water: 3, unrest: 2 } },
+    { t: 'Kıtlık fonu kur', note: 'Gıda güçlenir, isyan azalır.', fx: { food: 3, unrest: -5 } } ] },
+];
+
+// Gemi Vardiyası: sıçramalar arasında 2 iş. Gemide ilgili uzman olmalı.
+CP.SHIFTS = [
+  { id: 'research', role: 'sci', name: 'Araştırma', gain: 'Teknoloji +%1,5', desc: 'Gemideki bilim insanları çalışır. Sonraki sıçramada Teknoloji hedefi +%1,5.' },
+  { id: 'media', role: 'edu', name: 'Medya kampanyası', gain: 'Görev gücü +%10', desc: 'Eğitmenler zemini hazırlar. Sonraki görevin gücü +%10.' },
+  { id: 'supply', role: 'res', name: 'Erzak ve para', gain: 'Yakıt −2', desc: 'Araştırmacılar erzak ve para hazırlar. Sonraki sıçrama 2 enerji daha ucuz.' },
+];

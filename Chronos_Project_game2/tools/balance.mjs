@@ -4,7 +4,9 @@ import '../src/content.js';
 import '../src/sim.js';
 import '../src/game.js';
 const { CP } = globalThis;
+if (process.env.TUNE) { const t = JSON.parse(process.env.TUNE); CP.TUNE = { ...CP.TUNE, ...t, gain: { ...CP.TUNE.gain, ...t.gain } }; }
 const N = +process.argv[2] || 60;
+const ALIGN_HITS = +(process.env.ALIGN_HITS ?? 2);
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
 const f = (v) => (v == null ? '-' : v.toFixed(1));
 
@@ -37,8 +39,10 @@ function randPlan(G) {
 function bot(greedy, seed) {
   const G = CP.newGame(seed);
   let guard = 0;
+  let orgTotal = 0;
   while (!G.over && guard++ < 50) {
     let plan;
+    for (const s of CP.SHIFTS) if (Math.random() < 0.7) CP.toggleShift(G, s.id);
     if (greedy) {
       let best = -1e9;
       for (let i = 0; i < greedy; i++) {
@@ -57,23 +61,27 @@ function bot(greedy, seed) {
       if (G.hand.length) { CP.playCard(G, 0, pick(CP.REGIONS).id); continue; }
       G.over = G.over || 'energy'; break;
     }
+    plan.alignDiscount = CP.alignDiscount(ALIGN_HITS);
     CP.jump(G, plan);
     CP.takeOffer(G, G.offers[0]);
+    const org = !G.over && CP.nextOrg(G);
+    if (org) { CP.answerOrg(G, org, Math.floor(Math.random() * 3)); orgTotal++; }
     const lt = !G.over && CP.nextLetter(G);
     if (lt) CP.answerLetter(G, lt, pick(lt.letter.opts));
     if (greedy && G.hand.length > 2 && !G.over) CP.playCard(G, 0, pick(CP.REGIONS).id);
   }
+  G.orgTotal = orgTotal;
   return G;
 }
 for (const [name, g] of [['rastgele', 0], ['akilli(6)', 6], ['cok akilli(16)', 16]]) {
-  const res = {}; let jumps = 0, proto = 0;
+  const res = {}; let jumps = 0, proto = 0, orgs = 0;
   const tr = { tech: 0, eco: 0, peace: 0 };
   const n = g > 6 ? Math.ceil(N / 3) : N;
   for (let s = 0; s < n; s++) {
     const G = bot(g, 1000 + s);
     res[G.over || 'yok'] = (res[G.over || 'yok'] || 0) + 1;
-    jumps += G.jumps; proto += CP.proto(G);
+    jumps += G.jumps; proto += CP.proto(G); orgs += G.orgTotal;
     const k = CP.tracks(G); for (const x in tr) tr[x] += k[x] / n;
   }
-  console.log(name, JSON.stringify(res), 'ort sicrama', f(jumps / n), 'ort prototip', f(proto / n), 'kollar', f(tr.tech), f(tr.eco), f(tr.peace));
+  console.log(name, JSON.stringify(res), 'ort sicrama', f(jumps / n), 'ort prototip', f(proto / n), 'kollar', f(tr.tech), f(tr.eco), f(tr.peace), 'ort orgut', f(orgs / n));
 }

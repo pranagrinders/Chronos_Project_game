@@ -19,7 +19,7 @@ try{
  hidden=false;w.document.dispatchEvent(new w.Event('visibilitychange'));check(sound.contexts[0].state==='running','Görünür sekmede aktif sahnenin sesi geri gelir');
  click('#cSound');sound.flush();check(sound.contexts[0].state==='suspended'&&$('#btnMute').textContent==='Ses: Kapalı','Sessize alma ses ve komuta tercihine birlikte uygulanır');
  click('#cSound');check(sound.contexts[0].state==='running','Ses açma aynı bağlamı sürdürür');
- click('#cStorySkip');click('#cTravel');
+ click('#cStorySkip');click('#cTravel');click('#alignSkip');
  check($('#cinema').dataset.mode==='travel','Ses davranışı normal hızlı geçişte de denetlenir');
  const whoosh=sound.contexts[0].nodes.filter(n=>n.type==='sine'&&n.frequency.calls.some(c=>c[0]==='value'&&c[1]===65)).at(-1);
  check(whoosh&&whoosh.stops.length===1,'Yolculuk sesi geçiş sahnesinde başlatılır');

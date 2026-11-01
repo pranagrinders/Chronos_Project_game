@@ -19,7 +19,7 @@ function firstRun(seed, choices = [0, 0, 0]) {
 test('İlk görev üç gerçek kararla farklı tohumlarda normal kuralları kullanır', () => {
   for (let seed = 0; seed < 12; seed++) for (let a = 0; a < 2; a++) for (let b = 0; b < 2; b++) for (let c = 0; c < 3; c++) {
     const { G, rep, p } = firstRun(seed, [a, b, c]);
-    assert.equal(p.region, 'ana'); assert.equal(p.year, 430); assert.equal(p.m.id, 'koruma');
+    assert.equal(p.region, 'ana'); assert.equal(p.year, 430); assert.equal(p.m.id, 'meclis');
     assert.equal(G.jumps, 1); assert.equal(G.crew.res, CP.ROLES.res.start - 1);
     assert.equal(G.energy, 100 - 20 + rep.regen); assert.equal(p.choices.length, 3);
     assert.ok(!G.over); assert.ok(!G.tl.catastrophe);

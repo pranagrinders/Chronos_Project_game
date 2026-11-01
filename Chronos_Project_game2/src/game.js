@@ -1,11 +1,11 @@
 // OYUN KURALLARI: enerji, tim, gorevler, kartlar, mektuplar, kazanma/kaybetme. UI bilmez.
 globalThis.CP = globalThis.CP || {};
 (() => {
-  const { ERAS, ROLES, CARDS, FIELD, MISSIONS, BLOCK_MISSION, CURRENTS, FINALS, LETTERS } = CP;
+  const { ERAS, ROLES, CARDS, FIELD, MISSIONS, BLOCK_MISSION, CURRENTS, FINALS, LETTERS, ORGS, SHIFTS } = CP;
   const clamp = CP.clamp;
 
   // Prototip kollari: baslangic tarihi ile hedef arasi olcekleme (tools/balance.mjs ile ayarlanir)
-  const GAIN = { tech: 76, eco: 24, peace: 23 };
+  CP.TUNE = { gain: { tech: 122, eco: 39, peace: 37 }, alignPerHit: 0.08, supply: 2, orgPower: 0.5, orgQuota: 2 };
   const BASE = 10;
   CP.TRACKS = { tech: 'Teknoloji', eco: 'Ekosistem', peace: 'Barış' };
 
@@ -13,7 +13,7 @@ globalThis.CP = globalThis.CP || {};
     const G = {
       seed, energy: 100, crew: Object.fromEntries(Object.keys(ROLES).map((k) => [k, ROLES[k].start])),
       vets: { sci: 0, res: 0, edu: 0 }, ivs: [], hand: [], jumps: 0, protoBonus: 0, patch: 1,
-      nextId: 1, doomed: false, over: null, offers: [], letters: 0,
+      nextId: 1, doomed: false, over: null, offers: [], letters: 0, orgs: {}, shift: [],
     };
     G.base = CP.simulate(seed, []);
     G.tl = G.base;
@@ -24,7 +24,7 @@ globalThis.CP = globalThis.CP || {};
   CP.tracks = (G, tl = G.tl) => {
     if (tl.catastrophe) return { tech: 0, eco: 0, peace: 0 };
     const out = {};
-    for (const k of Object.keys(GAIN)) out[k] = clamp(BASE + ((tl.raw[k] - G.base.raw[k]) / GAIN[k]) * (100 - BASE));
+    for (const k of Object.keys(CP.TUNE.gain)) out[k] = clamp(BASE + ((tl.raw[k] - G.base.raw[k]) / CP.TUNE.gain[k]) * (100 - BASE));
     out.tech = clamp(out.tech + G.protoBonus);
     return out;
   };
@@ -35,6 +35,59 @@ globalThis.CP = globalThis.CP || {};
 
   CP.eraCost = (G, year) => CP.eraFor(year).cost;
   CP.minCost = () => Math.min(...ERAS.map((e) => e.cost));
+  // Sıçrama hizalama: isabet başına %10 yakıt indirimi. Iskalamanın cezası yok.
+  CP.ALIGN_ROUNDS = [{ zone: 0.2, speed: 0.75 }, { zone: 0.15, speed: 1 }, { zone: 0.11, speed: 1.3 }];
+  CP.alignDiscount = (hits) => clamp(hits, 0, 3) * CP.TUNE.alignPerHit;
+  CP.alignMarker = (seconds, speed) => { const x = (seconds * speed) % 2; return x < 1 ? x : 2 - x; };
+  CP.alignHit = (marker, center, zone) => Math.abs(marker - center) <= zone / 2;
+  // Gemi Vardiyası
+  CP.SHIFT_SLOTS = 2;
+  CP.shiftAvailable = (G, s) => G.jumps > 0 && G.crew[s.role] > 0;
+  CP.toggleShift = (G, id) => {
+    const s = SHIFTS.find((x) => x.id === id);
+    if (!s) return false;
+    if (G.shift.includes(id)) { G.shift = G.shift.filter((x) => x !== id); return true; }
+    if (!CP.shiftAvailable(G, s) || G.shift.length >= CP.SHIFT_SLOTS) return false;
+    G.shift = [...G.shift, id];
+    return true;
+  };
+  // Gerçek sıçrama bedeli: çağ bedeli, erzak ve hizalama indirimi.
+  CP.jumpCost = (G, plan) => {
+    const base = CP.eraCost(G, plan.year) - (G.shift.includes('supply') ? CP.TUNE.supply : 0);
+    return Math.max(1, Math.round(base * (1 - (plan.alignDiscount || 0)) * 10) / 10);
+  };
+  // Dünya örgütleri
+  const warCount = (tl) => tl.log.filter((e) => e.id === 'war').length;
+  const pulseItem = (key) => Object.values(CP.PULSE).flat().find((i) => i.key === key);
+  CP.orgProgress = (G, key) => {
+    if (G.tl.catastrophe) return 0;
+    if (key === 'wars') return warCount(G.base) - warCount(G.tl);
+    const now = G.tl.final.global[key], base = G.base.final.global[key];
+    return pulseItem(key)?.bad ? base - now : now - base;
+  };
+  CP.orgQuota = (org) => (org.key === 'wars' ? org.quota : org.quota * CP.TUNE.orgQuota);
+  CP.nextOrg = (G) => {
+    if (G.over || G.jumps < 2 || G.lastOrg === G.jumps) return null;
+    let best = null, top = 1;
+    for (const org of ORGS) {
+      if (G.orgs[org.key] != null) continue;
+      const ratio = CP.orgProgress(G, org.key) / CP.orgQuota(org);
+      if (ratio >= top) { top = ratio; best = org; }
+    }
+    return best;
+  };
+  CP.orgFx = (opt) => opt.fx ? Object.fromEntries(Object.entries(opt.fx).map(([k, v]) => [k, v * CP.TUNE.orgPower])) : undefined;
+  CP.answerOrg = (G, org, index) => {
+    const opt = org.opts[index], before = G.tl, tracksBefore = CP.tracks(G), energyBefore = G.energy;
+    G.orgs[org.key] = index; G.lastOrg = G.jumps;
+    if (opt.energy) G.energy = Math.min(100, G.energy + opt.energy);
+    if (opt.proto) G.protoBonus += opt.proto;
+    if (opt.crew) addVolunteer(G);
+    G.ivs.push({ id: 'o' + G.nextId++, kind: 'org', year: 2030, org: org.key, choice: index, fxAll: CP.orgFx(opt), text: `${org.name}: ${opt.t}.` });
+    G.tl = resim(G, G.ivs);
+    checkEnd(G, true);
+    return { org, opt, before, after: G.tl, tracksBefore, tracksAfter: CP.tracks(G), energyBefore, energyAfter: G.energy };
+  };
   const roleFor = (G, m) => m.roles.find((r) => G.crew[r] > 0) || null;
   CP.roleFor = roleFor;
 
@@ -43,7 +96,7 @@ globalThis.CP = globalThis.CP || {};
     const r = G.tl.final.regions[region];
     const g = G.tl.final.global;
     const usedHere = new Set(G.ivs.filter((i) => i.kind === 'drop' && i.region === region).map((i) => i.mission));
-    const cands = MISSIONS.filter((m) => year >= m.from && year <= m.to && roleFor(G, m))
+    const cands = MISSIONS.filter((m) => !m.tutorialOnly && year >= m.from && year <= m.to && roleFor(G, m))
       .map((m) => ({ m, s: m.need(r, g) * (usedHere.has(m.id) ? 0.4 : 1) + CP.hash01(G.seed, 'off', G.jumps, region, year, m.id) * 45 }))
       .sort((a, b) => b.s - a.s).map((x) => x.m);
     const out = [];
@@ -80,6 +133,7 @@ globalThis.CP = globalThis.CP || {};
   };
 
   const makeDrop = (G, plan) => ({
+    ...(G.shift?.includes('media') ? { power: 1.1 } : {}),
     id: 'd' + G.nextId, kind: 'drop', role: plan.role, year: plan.year, region: plan.region, mission: plan.m.id,
     choices: plan.choices || [], vet: plan.vet, current: plan.current?.id, block: plan.event ? { key: plan.event.id, region: plan.event.r, y: plan.event.y } : null,
     crack: CP.eraFor(plan.year).crack,
@@ -105,16 +159,18 @@ globalThis.CP = globalThis.CP || {};
 
   CP.jump = function jump(G, plan) {
     const before = G.tl, protoBefore = CP.proto(G);
-    const energyBefore = G.energy, bonusBefore = G.protoBonus, spent = CP.eraCost(G, plan.year);
+    const energyBefore = G.energy, bonusBefore = G.protoBonus, spent = CP.jumpCost(G, plan), saved = CP.eraCost(G, plan.year) - spent;
     const iv = makeDrop(G, plan);
     G.nextId++;
-    G.energy -= CP.eraCost(G, plan.year);
+    G.energy -= spent;
+    if (G.shift.includes('research')) G.protoBonus += 1.5;
+    G.shift = [];
     G.crew[plan.role]--;
     if (plan.vet) G.vets[plan.role]--;
     G.ivs.push(iv);
     G.jumps++;
     const rep = afterChange(G, before, protoBefore, iv);
-    rep.resources = { energyBefore, energyAfter: G.energy, spent, recovered: G.energy - energyBefore + spent, shipResearch: G.protoBonus - bonusBefore };
+    rep.resources = { energyBefore, energyAfter: G.energy, spent, saved, recovered: G.energy - energyBefore + spent, shipResearch: G.protoBonus - bonusBefore };
     return rep;
   };
 

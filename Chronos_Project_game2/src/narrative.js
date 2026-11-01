@@ -57,14 +57,14 @@ globalThis.CP = globalThis.CP || {};
     {art:'dry',kicker:'KIZILIRMAK · 2070',title:'Bugünü onaramazsın.',text:['Bu vadi bir zamanlar yeşildi. Nehirden geriye cılız bir su kaldı.','Burada artık her şey için çok geç.']},
     {art:'past',kicker:'KIZILIRMAK · M.S. 430',title:'Ama geçmişe gidebilirsin.',text:['Aynı vadi, 1640 yıl önce.','Burada atılan küçük bir adım yüzyıllar boyunca büyür ve 2070’e kadar ulaşır.'],jump:true},
     {art:'past',kicker:'BEDELİ',title:'Her yolculuk bir şey götürür.',text:['Her sıçrama makinenin enerjisini tüketir.','Geçmişe bıraktığın kişi o çağda kalır, ömrünü orada geçirir. Ekibin az. Enerjin sınırlı.']},
-    {art:'past',kicker:'İLK GÖREVİN',title:'Komutan sensin.',text:['Araştırmacın Leyla gitmeye hazır.','Hedef: M.S. 430, Kızılırmak kıyısı. Nehri 2070’e sağlıklı ulaştır.'],person:'researcher.png'},
+    {art:'past',kicker:'İLK GÖREVİN',title:'Komutan sensin.',text:['Araştırmacın Leyla gitmeye hazır.','Hedef: M.S. 430, Kızılırmak kıyısı. Suyu koruyacak kuralı orada başlat.'],person:'researcher.png'},
   ];
   // İlk görevin sade anlatımı. Yalnız metindir; seçeneklerin kuralları content.js'te kalır.
   const tutorialStages={
     'Kayıp Tablet':{line:'Komutan, vardık. Harabelerde eski bir iklim kaydı buldum. Bu bilgi 2070’e ulaşmalı. Saklayayım mı, çoğaltıp yayayım mı?',hints:{'Mağaraya mühürle':'Bilgi güvende kalır, ama az kişi öğrenir.','Kopyalatıp yay':'Çok kişi öğrenir, ama iz daha kolay silinir.'}},
     'Kervan Yolu':{line:'Komutan, vardık. Bir kervan bize katılmayı teklif ediyor. Onlarla gidersem daha çok yere ulaşırım; kalırsam bu vadiyi yakından izlerim. Ne yapayım?',hints:{'Kervanla git':'Daha çok yere ve insana ulaşırsın.','Tek bir noktada derinleş':'Bu vadiyi kuşaklarca izlersin; su korunur, iz uzun yaşar.'}},
-    'Sınır Anlaşmazlığı':{line:'Ben Dara, çobanım. Koruma alanınız otlaklarımızı kapatıyor. Sürümü nerede besleyeceğim? Nehri korumak istiyorsun, anladım. Ama biz de burada yaşıyoruz.',hints:{'Ortak yönetim kur':'Çobanlar kararlara katılır. Gerginlik düşer, koruma biraz zayıflar.','Sınırı koru':'Koruma güçlenir, çobanlar öfkelenir.'}},
-    'Ayrılık':{line:'Yıllar geçti, Komutan. Saçlarım ağardı. Ben öldükten sonra bu koruma alanına kim sahip çıkacak?',hints:{'Yerel halka devret':'Daha küçük kalır, ama uzun yaşar.','Sermayeyle büyüt':'Para güç katar; etkisi zamanla büyür.','Komşulara yay':'Komşu bölgelere de ulaşır; burada biraz zayıflar.'}},
+    'Sınır Anlaşmazlığı':{line:'Ben Dara, çobanım. Meclisinizin su kuralları otlaklarımızı kapatıyor. Sürümü nerede besleyeceğim? Suyu korumak istiyorsun, anladım. Ama biz de burada yaşıyoruz.',hints:{'Ortak yönetim kur':'Çobanlar meclise katılır. Gerginlik düşer, kurallar biraz gevşer.','Sınırı koru':'Su kuralları katı kalır, çobanlar öfkelenir.'}},
+    'Ayrılık':{line:'Yıllar geçti, Komutan. Saçlarım ağardı. Ben öldükten sonra Su Meclisi’ne kim sahip çıkacak?',hints:{'Yerel halka devret':'Daha küçük kalır, ama uzun yaşar.','Sermayeyle büyüt':'Para güç katar; etkisi zamanla büyür.','Komşulara yay':'Komşu bölgelere de ulaşır; burada biraz zayıflar.'}},
   };
   const tutorialHint=(plan,index,option)=>plan.tutorial?tutorialStages[plan.stages[index].title]?.hints[option.t]:null;
   function stageLine(plan,index){

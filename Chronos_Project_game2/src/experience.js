@@ -3,7 +3,7 @@ globalThis.CP = globalThis.CP || {};
 (() => {
   const region = (id) => CP.REGIONS.find((r) => r.id === id);
   CP.firstMission = (G) => {
-    const m = CP.missionById('koruma');
+    const m = CP.missionById('meclis');
     const role = CP.roleFor(G, m);
     return role && G.energy >= CP.eraCost(G, 430) ? { m, role, region: 'ana', year: 430, tutorial: true } : null;
   };

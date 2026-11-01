@@ -82,7 +82,7 @@
       + REGIONS.map((r) => `<path class="curLayer" id="c_${r.id}" d="${MAP.paths[r.id]}"></path>`).join('')
       + REGIONS.map((r) => `<text class="regLabel" id="l_${r.id}" x="${MAP.center[r.id][0]}" y="${MAP.center[r.id][1]}"></text>`).join('')
       + REGIONS.map((r) => `<text class="deltaLabel" id="dl_${r.id}" x="${MAP.center[r.id][0]}" y="${MAP.center[r.id][1] - 13}"></text>`).join('')
-      + '<g id="pins"></g>';
+      + '<g id="pins"></g><g id="marks"></g>';
     for (const r of REGIONS) {
       const el = $(`#r_${r.id}`);
       el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button'); el.setAttribute('aria-label', r.name);
@@ -118,6 +118,18 @@
     $('#mapLegend').innerHTML = `${wars ? `<span class="dn">Aktif savaş bölgesi: ${wars}</span> · ` : ''}Karbon ${Math.round(s.global.ppm)} ppm · +${s.global.heat.toFixed(1)}°C · <span style="color:#ff9d6e">Parlayan kenar: en kritik 3 bölge</span>${REGIONS.some((r) => s.regions[r.id].cur > 0.05) ? ' · <span style="color:#7ff0ff">Çizgili: akım yayılıyor</span>' : ''}`;
   }
 
+  // Tarih akarken yeni olaylar bölgenin üstünde + / − olarak yükselir.
+  function popMarks(y) {
+    if (reducedMotion) return;
+    G.tl.log.filter((e) => e.y === y && e.r && e.kind !== 'org' && !lastKeys.has(e.y + e.text)).slice(0, 3).forEach((e, i) => {
+      const [x, y2] = MAP.center[e.r], good = !!e.good, mark = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      mark.setAttribute('x', x + i * 12); mark.setAttribute('y', y2 - 6);
+      mark.setAttribute('class', 'popMark ' + (good ? 'pos' : 'neg'));
+      mark.textContent = good ? '+' : '−';
+      $('#marks').append(mark);
+      setTimeout(() => mark.remove(), 1500);
+    });
+  }
   function ticker(y = viewYear) {
     const pool = G.tl.log.filter((e) => e.y <= y && (e.kind === 'major' || e.kind === 'echo' || e.kind === 'legacy' || e.good));
     const fresh = pool.filter((e) => !lastKeys.has(e.y + e.text));
@@ -149,6 +161,35 @@
     }).join('') ;
   }
 
+  // Dünya Nabzı: hedefleri besleyen göstergeler sürekli görünür.
+  let pulsePrev = {};
+  function renderPulse() {
+    const y = viewYear, s = hist(y).global, base = (G.base.history.find((h) => h.y === hist(y).y) || G.base.final).global;
+    const fresh = {};
+    $('#pulse').innerHTML = Object.entries(CP.PULSE).map(([track, items]) => `<div class="pulseGroup" data-track="${track}"><b>${CP.TRACKS[track]}</b><div>${items.map((it) => {
+      const v = s[it.key], d = v - base[it.key], min = it.key === 'ppm' ? 3 : 1;
+      const better = it.bad ? d < 0 : d > 0, org = CP.ORGS.find((o) => o.key === it.key);
+      const founded = G.orgs[it.key] != null;
+      const progress = founded ? 100 : CP.clamp((CP.orgProgress(G, it.key) / CP.orgQuota(org)) * 100);
+      fresh[it.key] = v;
+      const changed = y === 2070 && !replaying && pulsePrev[it.key] != null && Math.abs(pulsePrev[it.key] - v) >= min;
+      return `<span class="pulseChip${changed ? ' flash' : ''}${founded ? ' founded' : ''}" title="${org.name}: ${founded ? 'kuruldu' : 'gösterge kotayı aşınca kurulur'}"><small>${it.name}</small><em>${Math.round(v)}${Math.abs(d) >= min ? `<u class="${better ? 'up' : 'dn'}">${d > 0 ? '↑' : '↓'}</u>` : ''}</em><i style="width:${progress}%"></i></span>`;
+    }).join('')}</div></div>`).join('');
+    if (y === 2070 && !replaying) pulsePrev = fresh;
+  }
+  // Gemi Vardiyası: sıçrama düğmesinin hemen yanında.
+  function renderShift() {
+    const hidden = !CINEMA || G.jumps === 0 || !!G.over;
+    document.querySelectorAll('.shiftBar').forEach((bar) => {
+      bar.hidden = hidden;
+      if (hidden) return;
+      bar.innerHTML = `<span class="shiftTitle"><b>GEMİ VARDİYASI</b><small>${G.shift.length} / ${CP.SHIFT_SLOTS} iş · sonraki sıçramaya</small></span>${CP.SHIFTS.map((x) => {
+        const on = G.shift.includes(x.id), can = CP.shiftAvailable(G, x);
+        return `<button data-shift="${x.id}" class="${on ? 'on' : ''}" aria-pressed="${on}" title="${x.desc}" ${(!can && !on) || replaying ? 'disabled' : ''}><b>${x.name}</b><small>${can ? x.gain : `Gemide ${ROLES[x.role].name.toLocaleLowerCase('tr-TR')} yok`}</small></button>`;
+      }).join('')}`;
+      bar.querySelectorAll('[data-shift]').forEach((b) => { b.onclick = () => { if (CP.toggleShift(G, b.dataset.shift)) { renderShift(); if (CINEMA) CP.sceneAudio.cue('select'); } }; });
+    });
+  }
   function renderCrew() {
     $('#crew').innerHTML = `<div class="ptitle"><b>ÖZEL TİM</b><span>Gemide</span></div>` + Object.entries(ROLES).map(([k, r]) => {
       return `<div class="crewRow" title="${r.desc}"><div>${r.name}<small>${G.crew[k] > 0 ? r.onBase.replace('Üste kaldığında: ', '') : 'Gemide kimse yok, fayda yok.'}</small></div><span><span class="badge">${G.crew[k]}</span>${G.vets[k] ? ` <span class="badge vet">${G.vets[k]} usta</span>` : ''}</span></div>`;
@@ -220,7 +261,7 @@
   function renderAll() {
     CP.hud?.render(G); CP.hud?.setVisible(seenIntro || qs.has('skip') || G.jumps > 0);
     if (CINEMA) { renderDispatch(sel || 'ana'); if (!CP.cinema.active && CP.sceneAudio.initialized && !muted && !document.hidden) CP.sceneAudio.play('bridge'); }
-    paintMap(); ticker(); renderPool(); renderCrew(); renderCore(); renderDrops(); renderProto(); renderHand(); renderTimeline(); guide(); paintWindow();
+    paintMap(); ticker(); renderPool(); renderPulse(); renderShift(); renderCrew(); renderCore(); renderDrops(); renderProto(); renderHand(); renderTimeline(); guide(); paintWindow();
     $('#btnJump').disabled = replaying || !!G.over || !CP.canAct(G) || G.energy < CP.minCost();
     $('#btnJump').textContent = guidedStart && G.jumps === 0 ? 'İLK GÖREVE BAŞLA' : CP.canAct(G) ? 'SIÇRAMA HAZIRLIĞI' : 'GEMİDE KİMSE YOK';
     $(`#r_ana`).classList.toggle('tutorialTarget', guidedStart && G.jumps === 0);
@@ -331,8 +372,9 @@
     if (guidedStart && G.jumps === 0) return firstBriefing();
     if (sel) return openEra(sel);
     const crisis = [...REGIONS].sort((a, b) => score(G.tl.final.regions[a.id]) - score(G.tl.final.regions[b.id])).slice(0, 3).map((r) => r.id);
-    modal(`${stepHead(1, 'Hangi bölge?')}<div class="optGrid regionChoices">${REGIONS.map((r) => `<button class="opt ${crisis.includes(r.id) ? 'crit' : ''}" data-reg="${r.id}"><b>${r.name}</b>${r.arch}${crisis.includes(r.id) ? ' · <span class="dn">KRİTİK</span>' : ''}</button>`).join('')}</div>
+    modal(`${stepHead(1, 'Hangi bölge?')}<div class="shiftBar"></div><div class="optGrid regionChoices">${REGIONS.map((r) => `<button class="opt ${crisis.includes(r.id) ? 'crit' : ''}" data-reg="${r.id}"><b>${r.name}</b>${r.arch}${crisis.includes(r.id) ? ' · <span class="dn">KRİTİK</span>' : ''}</button>`).join('')}</div>
       <div class="mfoot"><button id="mClose">Vazgeç</button></div>`);
+    renderShift();
     document.querySelectorAll('[data-reg]').forEach((b) => { b.onclick = () => openEra(b.dataset.reg); });
     $('#mClose').onclick = closeModal;
   }
@@ -340,8 +382,9 @@
     if (replaying || G.over) return;
     sel = region;
     document.querySelectorAll('.region').forEach((p) => p.classList.toggle('sel', p.id === 'r_' + region));
-    modal(`${stepHead(2, `${REG[region].name}: Hangi çağa?`)}<div class="optGrid eraGrid">${ERAS.map((e) => `<button class="opt" data-era="${e.year}" ${G.energy >= e.cost ? '' : 'disabled'}><b>${yr(e.year)}</b><span class="costTag">${e.cost} enerji</span><br>${e.name}. ${e.desc}</button>`).join('')}</div>
+    modal(`${stepHead(2, `${REG[region].name}: Hangi çağa?`)}<div class="shiftBar"></div><div class="optGrid eraGrid">${ERAS.map((e) => `<button class="opt" data-era="${e.year}" ${G.energy >= e.cost ? '' : 'disabled'}><b>${yr(e.year)}</b><span class="costTag">${e.cost} enerji</span><br>${e.name}. ${e.desc}</button>`).join('')}</div>
       <div class="mfoot"><button id="mBack">Başka bölge</button><span style="color:var(--dim)">Çekirdek Enerjisi: %${Math.round(G.energy)}</span></div>`);
+    renderShift();
     document.querySelectorAll('[data-era]').forEach((b) => { b.onclick = () => openMissions(region, +b.dataset.era); });
     $('#mBack').onclick = () => { sel = null; openPlanner(); };
   }
@@ -366,9 +409,57 @@
   function preventEvent(ev) {
     startMission({ m: CP.BLOCK_MISSION, role: CP.roleFor(G, CP.BLOCK_MISSION), event: ev, year: Math.max(430, ev.y - 10), region: ev.r });
   }
+  // Sıçrama hizalama: üç zamanlama denemesi. Isabetler yakıtı düşürür, atlamak ya da ıskalamak ceza vermez.
+  function alignJump(p, done) {
+    const box = document.createElement('div'), rounds = CP.ALIGN_ROUNDS, base = CP.jumpCost(G, { ...p, alignDiscount: 0 });
+    box.id = 'align'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-modal', 'true'); box.setAttribute('aria-labelledby', 'alignTitle');
+    box.innerHTML = `<div class="alignBox"><p class="eyebrow">${yr(p.year)} · ${CP.regionName(p.region, p.year)}</p><h2 id="alignTitle">Sıçrama hizalama</h2>
+      <p id="alignText">Işık altın bölgeye girince <b>Hizala</b>’ya bas. Her isabet yakıtı %${Math.round(CP.TUNE.alignPerHit * 100)} düşürür.</p>
+      <div class="alignPips">${rounds.map(() => '<i></i>').join('')}</div>
+      <div class="alignTrack"><i class="alignZone"></i><i class="alignMarker"></i></div>
+      <div class="alignActions"><button id="alignSkip">Atla (indirim yok)</button><button class="primary" id="alignHit">Hizala</button></div></div>`;
+    document.body.append(box);
+    const hit = box.querySelector('#alignHit'), marker = box.querySelector('.alignMarker'), zone = box.querySelector('.alignZone');
+    let round = 0, hits = 0, center = 0.5, t0 = performance.now(), live = true;
+    const pos = (now) => CP.alignMarker((now - t0) / 1000, rounds[round].speed);
+    const setRound = () => {
+      center = 0.2 + Math.random() * 0.6; t0 = performance.now();
+      zone.style.left = (center - rounds[round].zone / 2) * 100 + '%'; zone.style.width = rounds[round].zone * 100 + '%';
+    };
+    const frame = (now) => { if (!live) return; marker.style.left = pos(now) * 100 + '%'; requestAnimationFrame(frame); };
+    const leave = (count) => { live = false; removeEventListener('keydown', keys, true); box.remove(); done(count); };
+    const summary = () => {
+      live = false;
+      const after = CP.jumpCost(G, { ...p, alignDiscount: CP.alignDiscount(hits) });
+      box.querySelector('#alignText').innerHTML = hits ? `<b>${hits} / ${rounds.length} isabet.</b> Sıçrama bedeli ${base} yerine <b>${String(after).replace('.', ',')} enerji</b>.` : `İsabet yok. Sıçrama bedeli <b>${base} enerji</b>, ceza yok.`;
+      box.querySelector('.alignActions').innerHTML = '<button class="primary" id="alignGo">Devam →</button>';
+      const go = box.querySelector('#alignGo'); go.onclick = () => leave(hits); go.focus();
+    };
+    hit.onclick = () => {
+      const good = CP.alignHit(pos(performance.now()), center, rounds[round].zone);
+      if (good) hits++;
+      box.querySelectorAll('.alignPips i')[round].className = good ? 'good' : 'miss';
+      if (CINEMA && CP.sceneAudio.initialized) CP.sceneAudio.cue(good ? 'positive' : 'caution');
+      round++;
+      if (round >= rounds.length) summary(); else setRound();
+    };
+    box.querySelector('#alignSkip').onclick = () => leave(0);
+    const keys = (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); if (box.querySelector('#alignSkip')) leave(0); else leave(hits); }
+      if (e.key === 'Tab') { e.preventDefault(); e.stopPropagation(); const nodes = [...box.querySelectorAll('button')], i = nodes.indexOf(document.activeElement); nodes[(i + 1) % nodes.length].focus(); }
+    };
+    addEventListener('keydown', keys, true);
+    setRound(); hit.focus(); requestAnimationFrame(frame);
+  }
+  let tutorialHits = 0;
   function startMission(p) {
     if (replaying || G.over) return;
-    plan = { ...p, choices: [], logs: [], vet: G.vets[p.role] > 0 };
+    if (p.tutorial) return beginMission(p, tutorialHits);
+    if (FAST || !CINEMA) return beginMission(p, 0);
+    alignJump(p, (hits) => beginMission(p, hits));
+  }
+  function beginMission(p, hits) {
+    plan = { ...p, choices: [], logs: [], vet: G.vets[p.role] > 0, alignDiscount: CP.alignDiscount(hits) };
     plan.stages = CP.stages(G, plan);
     if (!(CINEMA && plan.tutorial)) sfx.jump();
     renderStage(0);
@@ -449,8 +540,9 @@
     const seq = steps.slice(start);
     const tick = (now) => {
       const i = Math.max(0, Math.min(seq.length - 1, Math.floor(((now - t0) / dur) * seq.length)));
+      if (viewYear !== seq[i].y) popMarks(seq[i].y);
       viewYear = seq[i].y;
-      paintMap(viewYear); ticker(viewYear); paintWindow(seq[i].global); renderTimeline();
+      paintMap(viewYear); ticker(viewYear); paintWindow(seq[i].global); renderTimeline(); renderPulse();
       if (i < seq.length - 1) requestAnimationFrame(tick);
       else { replaying = false; viewYear = 2070; compareTl = rep.before; renderAll(); done(); setTimeout(() => { compareTl = null; paintMap(); }, 6000); }
     };
@@ -535,10 +627,12 @@
     { target: '#resourceHud .hudEnergy', title: 'Enerji', text: 'Her sıçrama enerji harcar, görevden sonra biraz geri gelir. Biterse döngü biter.' },
     { target: '#resourceHud .hudCrew', title: 'Ekibin', text: 'Her göreve bir uzman gider ve o çağda kalır. Bilim, Araştırma ve Eğitim uzmanları farklı görevler yapar.' },
     { target: '#resourceHud .hudPrototype', title: 'Asıl hedefin', text: 'Teknoloji, Ekosistem ve Barış. Üçü de %100 olunca ikinci makine tamamlanır ve oyunu kazanırsın.' },
+    { target: '#pulse', title: 'Dünya Nabzı', text: 'Her hedefi beşer gösterge besler; burada iyileşen şey hedefi de doldurur. Bir göstergenin çubuğu dolunca dünya örgütü kurulur ve yönünü sen seçersin.' },
     { target: '#mapWrap', title: 'Dünya haritası', text: 'Renkler bölgelerin durumunu gösterir. Bir bölgeye bas; ekibin oranın sorununu anlatır, görev oradan başlar.' },
     { target: '#tlBar', title: 'Zaman çizelgesi', text: 'Bir çağa bas, o yılın dünyasını haritada gör. Geçmişi değiştirdikçe bu çizgi de değişir.' },
     { target: '#cardDrawer', title: 'Karar kartların', text: 'Görev sonunda kazandığın kartlar burada durur. Açıp bir karta basarak oynarsın. En fazla 4 kart taşıyabilirsin.', open: true },
     { target: '#ops .tabs', title: 'Gemi ve Tarih Kitabı', text: 'Gemi seni komuta güvertesine götürür. Tarih Kitabı, değiştirdiğin her olayı yıl yıl gösterir.' },
+    { target: '#shiftBar', title: 'Gemi vardiyası', text: 'Her sıçramadan önce 2 iş seç: araştırma, medya, erzak. Gemide ilgili uzman olmalı; kimi göndereceğini buna göre düşün.' },
     { target: '#btnJump', title: 'Yeni görev', text: 'Hazır olunca buradan yeni bir sıçrama planlarsın. Artık bölgeyi, çağı ve uzmanı sen seçiyorsun.' },
   ];
   function mapTour(done) {
@@ -586,7 +680,26 @@
     if (CINEMA && !FAST && !G.over && G.jumps === 1 && !tourSeen) { tourSeen = true; return mapTour(continueTurn); }
     continueTurn();
   }
+  // Dünya örgütü: gösterge kotayı aşınca kurulur, oyuncu yönünü seçer.
+  function showOrg(org) {
+    if (CINEMA && CP.sceneAudio.initialized) CP.sceneAudio.cue('positive');
+    modal(`<p class="eyebrow">KOTA AŞILDI · DÜNYA ÖRGÜTÜ KURULDU</p><h2>${org.name}</h2>${CINEMA ? CP.story.dialogue(org.speaker, org.text) : `<p class="lead">${org.text}</p>`}
+      <h3>Örgütü nasıl yönlendireceksin?</h3><div class="optGrid orgGrid">${org.opts.map((o, i) => `<button class="opt" data-org="${i}"><b>${o.t}</b><span class="missionDesc">${o.note}</span></button>`).join('')}</div>`);
+    document.querySelectorAll('[data-org]').forEach((b) => {
+      b.onclick = () => {
+        const r = CP.answerOrg(G, org, +b.dataset.org);
+        persistRun(); renderAll();
+        if (G.over) { closeModal(); return showEnd(); }
+        const rows = Object.entries(CP.TRACKS).map(([k, n]) => `<div class="stat"><span>${n}</span><b>%${Math.round(r.tracksBefore[k])} → %${Math.round(r.tracksAfter[k])}</b></div>`).join('');
+        modal(`<p class="eyebrow">${org.name}</p><h2>${r.opt.t}</h2><p class="lead">${r.opt.note} Etkisi 2030’dan itibaren tarihe işlendi.</p>${rows}${r.energyAfter !== r.energyBefore ? `<div class="stat"><span>Enerji</span><b>${Math.round(r.energyBefore)} → ${Math.round(r.energyAfter)}</b></div>` : ''}<div class="mfoot"><span></span><button class="primary" id="mNext">Devam</button></div>`);
+        $('#mNext').onclick = () => { closeModal(); continueTurn(); };
+        $('#mNext').focus();
+      };
+    });
+  }
   function continueTurn() {
+    const org = CP.nextOrg(G);
+    if (org) return showOrg(org);
     const ctx = CP.nextLetter(G);
     if (ctx) showLetter(ctx);
     else if (CINEMA && G.jumps === 1 && !G.over) openBridge();
@@ -616,6 +729,8 @@
     CP.cinema?.close(); closeModal(); renderAll();
     if (G.over) return showEnd();
     if (guidedStart) return firstBriefing();
+    const org = CP.nextOrg(G);
+    if (org) return showOrg(org);
     const ctx = CP.nextLetter(G);
     if (ctx) return showLetter(ctx);
     if (CINEMA) openBridge();
@@ -711,7 +826,7 @@
     CP.hud?.setVisible(true);
     const p = CP.firstMission(G);
     if (!p) { guidedStart = false; renderAll(); return openPlanner(); }
-    if (CINEMA) return CP.cinema.briefing(G, p, () => startMission(p));
+    if (CINEMA) return CP.cinema.briefing(G, p, () => startMission(p), FAST ? null : (go) => alignJump(p, (hits) => { tutorialHits = hits; go(); }));
     modal(`<p class="eyebrow">İLK GÖREV · 2070 → M.S. 430</p><h2>Suyun izi</h2>
       <div class="briefing"><div><p class="lead">Anadolu’nun geleceğinde bir havzayı korumayı deneyeceğiz.</p>
       <p>${CP.missionReason(G, p, 'ana')}</p>

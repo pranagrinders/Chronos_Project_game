@@ -2,7 +2,7 @@
 globalThis.CP = globalThis.CP || {};
 (() => {
   const KEY = 'chronos.run.v1', BACKUP = 'chronos.run.previous.v1', VERSION = 1;
-  const fields = ['seed', 'energy', 'crew', 'vets', 'ivs', 'hand', 'jumps', 'protoBonus', 'patch', 'nextId', 'doomed', 'over', 'offers', 'letters', 'lastLetter'];
+  const fields = ['seed', 'energy', 'crew', 'vets', 'ivs', 'hand', 'jumps', 'protoBonus', 'patch', 'nextId', 'doomed', 'over', 'offers', 'letters', 'lastLetter', 'orgs', 'lastOrg', 'shift'];
   const optionKey = (o) => o.t + '\n' + o.log;
   const options = new Map([
     ...CP.FIELD.flatMap((s) => s.opts), ...CP.MISSIONS.flatMap((m) => m.crisis.opts),
@@ -19,7 +19,7 @@ globalThis.CP = globalThis.CP || {};
   CP.newSaveId = () => globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
 
   function restoreIntervention(iv) {
-    if (!iv || typeof iv.id !== 'string' || !/^[dxc][1-9]\d*$/.test(iv.id) || !year(iv.year)) return fail();
+    if (!iv || typeof iv.id !== 'string' || !/^[dxco][1-9]\d*$/.test(iv.id) || !year(iv.year)) return fail();
     if (iv.kind === 'drop') {
       const m = CP.missionById(iv.mission);
       if (!m || !CP.ROLES[iv.role] || !m.roles.includes(iv.role) || !regions.has(iv.region)) return fail();
@@ -40,13 +40,18 @@ globalThis.CP = globalThis.CP || {};
       return { id: iv.id, kind: 'drop', year: iv.year, role: iv.role, region: iv.region, mission: iv.mission,
         choices, vet: !!iv.vet, current: iv.current || undefined, block: iv.block ? copy(iv.block) : null,
         crack: iv.crack, ...(iv.extractedAt != null ? { extractedAt: iv.extractedAt } : {}),
-        ...(iv.letters != null ? { letters: iv.letters } : {}), ...(iv.shield ? { shield: true } : {}) };
+        ...(iv.letters != null ? { letters: iv.letters } : {}), ...(iv.shield ? { shield: true } : {}), ...(iv.power === 1.1 ? { power: 1.1 } : {}) };
     }
     if (iv.kind === 'card') {
       const c = cards.get(iv.card);
       if (!c || !(c.fx || c.fxAll || c.ocean) || c.year !== iv.year || (c.target && !regions.has(iv.region))) return fail();
       if (!iv.id.startsWith('c') || (iv.region != null && !regions.has(iv.region))) return fail();
       return { id: iv.id, kind: 'card', year: c.year, region: iv.region, fx: c.fx, fxAll: c.fxAll, ocean: c.ocean, spread: c.spread, card: c.id };
+    }
+    if (iv.kind === 'org') {
+      const org = CP.ORGS.find((o) => o.key === iv.org), opt = org?.opts[iv.choice];
+      if (!opt || !iv.id.startsWith('o') || iv.year !== 2030) return fail();
+      return { id: iv.id, kind: 'org', year: 2030, org: org.key, choice: iv.choice, fxAll: CP.orgFx(opt), text: `${org.name}: ${opt.t}.` };
     }
     if (iv.kind === 'crack' && iv.id.startsWith('x') && finite(iv.crack, 0, 100)) return { id: iv.id, kind: 'crack', year: iv.year, crack: iv.crack };
     return fail();
@@ -68,6 +73,9 @@ globalThis.CP = globalThis.CP || {};
     const ivs = d.ivs.map(restoreIntervention), ids = new Set(ivs.map((iv) => iv.id));
     if (ids.size !== ivs.length || ivs.some((iv) => +iv.id.slice(1) >= d.nextId)) return fail();
     if (d.jumps !== ivs.filter((iv) => iv.kind === 'drop' || iv.kind === 'crack').length) return fail();
+    if (d.orgs != null) for (const [key, c] of Object.entries(d.orgs)) if (!CP.ORGS.find((o) => o.key === key)?.opts[c]) return fail();
+    if (d.lastOrg != null && (!integer(d.lastOrg) || d.lastOrg > d.jumps)) return fail();
+    if (d.shift != null && (!Array.isArray(d.shift) || d.shift.length > 2 || d.shift.some((id) => !CP.SHIFTS.some((x) => x.id === id)))) return fail();
     const roleCounts = (r) => Object.fromEntries(Object.keys(CP.ROLES).map((k) => [k, r[k]]));
     return { ...record, data: { ...d, crew: roleCounts(d.crew), vets: roleCounts(d.vets), ivs } };
   }

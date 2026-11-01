@@ -37,7 +37,7 @@ beklenen fayda ve bedel açıklamaları, atlanabilir zaman geçişi, gerçek öl
 AI görselleri temsili oyun illüstrasyonlarıdır; simülasyon sonucu ya da tarihsel kanıt değildir.
 Varlık kaynakları ve üretim promptları `assets/cinema/` klasöründedir.
 
-Oyun mantığı ve ses yaşam döngüsü: `node --test tools/experience.test.mjs tools/scene-data.test.mjs tools/save.test.mjs tools/scene-audio.test.mjs tools/decision-preview.test.mjs tools/narrative.test.mjs` (ek paket gerekmez).
+Oyun mantığı ve ses yaşam döngüsü: `node --test tools/experience.test.mjs tools/scene-data.test.mjs tools/save.test.mjs tools/scene-audio.test.mjs tools/decision-preview.test.mjs tools/narrative.test.mjs tools/systems.test.mjs` (ek paket gerekmez).
 Denge ölçümü: `node tools/balance.mjs`.
 
 İlk görevin sonunda komuta güvertesine dönersin; güvertedeki öneri, o an en geride
@@ -81,3 +81,8 @@ Kullanıcı etkileşiminden önce ses açılmaz;Sessiz tercihi gezinme ve konuş
 Tarayıcı yerel Türkçe WebSpeechsesi sağlıyorsa **Konuşmayı dinle** görünür;
 çevrimiçi ses seçilmez. Bu seçenek her tarayıcıda mevcut olmayabilir;metin daima görünür.
 Manrope/Barlowfontları ve OFLlisansları assets/fonts içindedir;oyun harici font isteği yapmaz.
+
+Yeni sistemler: **Dünya Nabzı** (haritanın üstünde, her hedefi besleyen beşer gösterge), **Gemi Vardiyası**
+(sıçramadan önce 2 iş), **Sıçrama hizalama** (atlanabilir; her isabet yakıtı %8 düşürür) ve **Dünya örgütleri**
+(gösterge kotayı aşınca kurulur, 3 yön seçilir). Ayarlar `src/game.js` içindeki `CP.TUNE` satırındadır;
+değiştirince `node tools/balance.mjs` ile ölçün. `TUNE='{"orgQuota":3}'` ortam değişkeni denemeye yarar.
