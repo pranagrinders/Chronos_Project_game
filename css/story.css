@@ -344,3 +344,15 @@ body.storyMode{background:#0a1316}
 .recruit img{width:96px;height:102px;object-fit:contain;object-position:bottom}
 .recruit b{font-size:15px}.recruitRole{font-size:11px;letter-spacing:1px;color:#e6c378;text-transform:uppercase}
 @media(max-width:800px){.recruitGrid{grid-template-columns:1fr!important}}
+
+/* Dar ekranda görevler alt alta: her biri ayrı, numaralı bir kart */
+@media(max-width:999px){
+ .storyMode .missionGrid{gap:18px;counter-reset:gorev}
+ .storyMode .mission{counter-increment:gorev;padding:0 0 14px;background:#172529;border:1px solid #52645d;border-left:4px solid #8d9a8c;border-radius:6px}
+ .storyMode .mission:nth-child(even){background:#1f2f2d}
+ .storyMode .mission:hover,.storyMode .mission:focus-visible{background:#26393a;border-color:#d5c39a}
+ .storyMode .mission::before{content:"GÖREV " counter(gorev);display:block;padding:7px 12px;font-size:11px;font-weight:700;letter-spacing:1.5px;color:#e6c378;background:#0d181b;border-bottom:1px solid #52645d}
+ .storyMode .mission:has(.roleTag.sci){border-left-color:#7fc4d8}
+ .storyMode .mission:has(.roleTag.res){border-left-color:#e0b35c}
+ .storyMode .mission:has(.roleTag.edu){border-left-color:#8fce8a}
+}
