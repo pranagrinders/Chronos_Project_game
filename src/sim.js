@@ -28,7 +28,7 @@ globalThis.CP = globalThis.CP || {};
     const role = ROLES[iv.role];
     const fx = {};
     const add = (o) => { if (o) for (const k in o) fx[k] = (fx[k] || 0) + o[k]; };
-    let mult = CP.eraFor(iv.year).scale * (iv.vet ? 1.25 : 1);
+    let mult = CP.eraFor(iv.year).scale * (iv.vet ? 1.25 : 1) * (iv.power || 1);
     let hz = 0.03 + (m.hz || 0) + (iv.role === 'res' ? role.hz : 0);
     let grow = false, spread = 0, early = 0;
     if (m.useRole) add(role.fx);
@@ -45,8 +45,15 @@ globalThis.CP = globalThis.CP || {};
     for (let y = iv.year + 100; y <= YEARS.end; y += 100) {
       if (hash01(seed, 'hz', iv.id, y) < Math.max(0.004, hz)) { deadAt = y; break; }
     }
-    return { iv, m, fx, mult, grow, spread, deadAt, early, tau: m.tau || 28, echoed: {}, cur: iv.current ? CURRENTS.find((c) => c.id === iv.current) : null, a: {} };
+    return { iv, m, fx, mult, grow, spread, deadAt, early, hazard: Math.max(0.004, hz), tau: m.tau || 28, echoed: {}, cur: iv.current ? CURRENTS.find((c) => c.id === iv.current) : null, a: {} };
   }
+
+  // Aynı miras kurallarından olasılık öngörüsü. Oyuncunun seed'i veya gerçekleşecek dağılma yılı gösterilmez.
+  CP.legacyRisk = (iv) => {
+    const l = buildLegacy(iv, 0), checks = Math.max(0, Math.floor((YEARS.end - iv.year) / 100));
+    const perCentury = Math.min(1, l.hazard);
+    return { checks, perCentury, total: 1 - Math.pow(1 - perCentury, checks), atFloor: perCentury <= 0.004 };
+  };
 
   function strength(l, y, stoic) {
     const t0 = l.iv.year;
@@ -70,7 +77,7 @@ globalThis.CP = globalThis.CP || {};
 
   CP.simulate = function simulate(seed, interventions = [], opts = {}) {
     const legacies = interventions.filter((i) => i.kind === 'drop').map((i) => buildLegacy(i, seed));
-    const directs = interventions.filter((i) => i.kind === 'card' && i.year != null);
+    const directs = interventions.filter((i) => (i.kind === 'card' || i.kind === 'org') && i.year != null);
     const cracks = interventions.filter((i) => i.crack);
     const blocks = interventions.filter((i) => i.block).map((i) => ({ ...i.block, iv: i.id, y0: i.year }));
     const state = {};
@@ -152,9 +159,15 @@ globalThis.CP = globalThis.CP || {};
           if (l.echoed[key] || y - l.iv.year < ec.after) return;
           if (hash01(seed, 'mecho', l.iv.id, ei, y) < 0.5) fire(key, ec);
         });
+        (CP.MISSION_NEWS?.[l.m.id] || []).forEach(([from, to, text], ni) => {
+          const key = 'n' + ni;
+          if (l.echoed[key] || y < from || y > to || y - l.iv.year < 10) return;
+          if (hash01(seed, 'news', l.iv.id, ni, y) < 0.3) { l.echoed[key] = true; push({ y, r: id, kind: 'echo', news: true, iv: l.iv.id, good: true, text: CP.fill(text, id, y) }); }
+        });
       }
       for (const c of directs) {
         if (y < c.year) continue;
+        if (c.kind === 'org' && y === c.year) push({ y, r: 'ana', kind: 'org', iv: c.id, good: true, text: c.text });
         const k = 1 - Math.exp(-(y - c.year + 10) / 20);
         if (c.fx && c.region) {
           addFx(c.region, c.fx, k);
@@ -326,7 +339,8 @@ globalThis.CP = globalThis.CP || {};
     return out;
   }
 
-  // Ikinci Prototip uc koldan beslenir: ham puanlar
+  // Ikinci Prototip uc koldan beslenir: ham puanlar. Her kolu Dünya Nabzı'ndaki beş gösterge besler.
+  const RAW = { waste: 0.12, resilience: 0.12, food: 0.12 };
   function rawTracks(history) {
     const last = history[history.length - 1].global;
     const m = milestones(history[history.length - 1]);
@@ -334,9 +348,9 @@ globalThis.CP = globalThis.CP || {};
     const avg = (k) => late.reduce((s, h) => s + h.global[k], 0) / Math.max(1, late.length);
     const count = (key) => m.filter((x) => x.key === key).length;
     return {
-      tech: last.tech * 0.55 + last.renew * 0.65 + last.awareness * 0.1 + count('renew') * 1.2,
+      tech: last.tech * 0.55 + last.renew * 0.65 + last.awareness * 0.1 + last.waste * RAW.waste + last.resilience * RAW.resilience + count('renew') * 1.2,
       eco: (last.bio + last.water + last.soil) / 3 + (700 - last.ppm) * 0.05 + (100 - last.ocean) * 0.06 + count('waste') * 0.35,
-      peace: 100 - (avg('wars') * 7 + avg('unrest') * 0.7 + avg('military') * 0.5 + avg('nuke') * 0.4) + count('awareness') * 1,
+      peace: 100 - (avg('wars') * 7 + avg('unrest') * 0.7 + avg('military') * 0.5 + avg('nuke') * 0.4) + avg('food') * RAW.food + count('awareness') * 1,
     };
   }
 

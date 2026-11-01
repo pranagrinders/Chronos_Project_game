@@ -124,3 +124,104 @@ button.ghost{background:none;color:var(--dim)}
 .mile{color:var(--amb);font-size:13.5px;font-weight:600;padding:1px 0}
 .more{margin-top:8px;font-size:12px}.more summary{cursor:pointer;color:var(--cy)}
 .trackRow{grid-template-columns:70px 1fr 40px;padding-left:0}
+#saveStatus{font-size:10px;color:var(--dim);line-height:1.4;min-height:14px;margin:7px 0 0}
+.saveNote{font-size:12px;color:var(--cy);line-height:1.5}
+.resourceLedger{margin:12px 0;padding:10px 0;border-top:1px solid var(--line)}.resourceLedger p{font-size:12px;color:var(--dim);margin:7px 0;line-height:1.6}
+
+/* Komuta: harita ana çalışma alanı, ikincil bilgiler isteğe bağlı. */
+:root{--dim:#a1b4bd}
+#app{grid-template-columns:230px minmax(0,1fr) 270px;grid-template-rows:minmax(44px,auto) minmax(0,1fr);gap:12px;padding:12px}
+.panel{border-color:#20343e;padding:12px;background:rgba(10,20,27,.94)}
+#right,#left{overflow-y:auto;scrollbar-width:thin}
+#right #proto{order:0}#right #cardDrawer{order:1}#right #dataDrawer{order:2}
+#proto .big{display:block;font-size:30px;margin:8px 0 12px}
+.trackRow{padding:8px 0;border-bottom:1px solid #20343e}
+.crewRow{border:0;border-bottom:1px solid #20343e;padding:7px 0;margin:0}
+.crewRow small{margin-top:3px}
+#view{min-height:110px;margin-top:8px;border:1px solid #314852}
+#ticker{margin-top:10px}
+.drawer{flex:0 0 auto}
+.drawer>summary{display:flex;justify-content:space-between;align-items:center;gap:8px;cursor:pointer;list-style:none;font-weight:600;font-size:12px;min-height:24px}
+.drawer>summary::-webkit-details-marker{display:none}
+.drawer>summary:before{content:'+';color:var(--cy);font-size:17px;font-weight:400}
+.drawer[open]>summary:before{content:'−'}
+.drawer>summary>span{margin-left:auto;color:var(--dim);font-size:11px}
+.drawer[open]>summary{margin-bottom:12px}
+#pool,#hand,#drops{overflow:visible;max-height:none;min-height:0}
+#pool>.ptitle,#hand>.ptitle,#drops>.ptitle{display:none}
+.pgroup summary{padding:7px 0}
+.pgroup summary:before{content:'▸';color:var(--cy)}.pgroup[open] summary:before{content:'▾'}
+.cards{grid-template-columns:1fr}
+.card{min-height:58px;padding:10px;font-size:12px}
+.missionDesc{display:block}
+.missionWhy{display:block;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);font-size:12px;line-height:1.55;color:#bfd0d8}
+.missionWhy strong{display:block;font-size:11px;color:var(--cy);margin-bottom:4px}
+.regionChoices{grid-template-columns:repeat(4,minmax(0,1fr))}
+.eyebrow{display:block;color:var(--cy);font-size:11px;font-weight:650;letter-spacing:1.3px;margin:0 0 10px}
+.muted{color:var(--dim);font-size:12px;line-height:1.5}
+.tutorialNote{border-left:2px solid var(--cy);padding:8px 12px;background:#0f252d;color:#bfdae2;font-size:13px;line-height:1.6;margin:14px 0}
+.introSteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));list-style:none;counter-reset:steps;padding:0;margin:24px 0;gap:24px}
+.introSteps li{counter-increment:steps;line-height:1.5}
+.introSteps li:before{content:'0' counter(steps);display:block;font-size:24px;color:var(--cy);margin-bottom:10px}
+.introSteps b,.introSteps span{display:block}.introSteps span{color:var(--dim);margin-top:5px}
+.briefing{display:grid;grid-template-columns:1.5fr 1fr;gap:28px;line-height:1.6}
+.briefing dl{margin:0}.briefing dl div{padding:10px 0;border-bottom:1px solid var(--line)}
+.briefing dt{font-size:11px;color:var(--dim)}.briefing dd{margin:2px 0 0;font-weight:600}
+#modalBox{max-width:900px;padding:26px 30px;border-color:#37545d;animation:dialogIn .18s ease-out}
+#modalBox h2{font-size:24px;letter-spacing:0;margin-bottom:16px}
+.mfoot{margin:22px -30px -26px;padding:14px 30px;bottom:-26px}
+.mfoot .primary{flex:0 1 auto;min-width:180px}
+.missionGrid{align-items:stretch}.mission{padding:16px}
+.opt{line-height:1.5;transition:background .16s,border-color .16s,transform .16s}
+.opt:hover:not(:disabled){transform:translateY(-2px)}
+.reportStory>section{padding:16px 0;border-bottom:1px solid var(--line)}
+.reportStory>section:first-child{padding-top:0}
+.reportStory .eyebrow{margin-bottom:8px}
+#modalBox .reportStory h3{color:var(--txt);font-size:17px;margin:0 0 8px;line-height:1.5}
+.decisionList{color:var(--dim);padding-left:18px;margin:0;font-size:12px;line-height:1.7}
+.reportStory .chain{margin:0}.reportStory .chain div{line-height:1.7;padding:4px 0}
+.outcome{padding:7px 0;font-size:14px;gap:12px}.outcome b{font-variant-numeric:tabular-nums}
+.reportProgress{padding:4px 0 12px}.reportProgress .stat{padding:6px 0}
+.more{margin:14px 0}.more>summary{padding:8px 0}
+.bar i{transition:width .45s ease-out}
+.region.tutorialTarget{stroke:var(--cy);stroke-width:2.5;animation:targetPulse 2s ease-in-out infinite}
+button:focus-visible,summary:focus-visible,.region:focus-visible{outline:2px solid var(--cy);outline-offset:4px}
+#modalBox:focus{outline:none}
+@keyframes dialogIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes targetPulse{50%{stroke:#e9ffff;stroke-width:4}}
+@media(max-width:1150px){
+  #app{grid-template-columns:200px minmax(0,1fr) 235px;gap:8px;padding:8px}
+  header{gap:10px}h1{font-size:16px;letter-spacing:1px}h1 span{display:block;margin-left:0;font-size:10px}
+  #guide{font-size:12px}.panel{padding:9px}.tabs{display:flex;gap:4px}.ptitle{flex-wrap:wrap}
+  .prow{grid-template-columns:1fr 40px 58px;padding-left:0}.trackRow{grid-template-columns:65px 1fr 35px}
+  .eraGrid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:900px){
+  html,body{height:auto;min-height:100%;overflow:auto}
+  #app{height:auto;min-height:100svh;grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-rows:auto auto auto;gap:12px;padding:12px}
+  header{grid-column:1/-1;align-items:flex-start}#guide{min-width:0}
+  main{grid-column:1/-1;grid-row:2;min-width:0}#left{grid-column:1;grid-row:3}#right{grid-column:2;grid-row:3}
+  #mapWrap{flex:none;height:clamp(260px,45vw,440px)}#view{min-height:100px}
+  .missionGrid{grid-template-columns:1fr}.missionWhy{margin-top:8px;padding-top:8px}.mission{padding:12px}
+  .regionChoices{grid-template-columns:repeat(3,minmax(0,1fr))}
+  #modalBox{padding:20px}.mfoot{margin:20px -20px -20px;padding:12px 20px;bottom:-20px}
+  .briefing{gap:18px}.outcome{font-size:13px}
+}
+@media(max-width:560px){
+  header{flex-direction:column}h1 span{display:inline;margin-left:8px}#guide{width:100%}
+  #app{grid-template-columns:minmax(0,1fr);padding:8px;gap:8px}
+  #left,#right,main{grid-column:1}#right{grid-row:3}#left{grid-row:4}
+  #mapWrap{height:260px}#mapLegend{max-width:90%;font-size:10px}#ticker{height:54px}
+  .regLabel{font-size:9px}.cols,.briefing,.introSteps{grid-template-columns:1fr}
+  .introSteps{gap:14px;margin:18px 0}.introSteps li{position:relative;padding-left:34px}.introSteps li:before{position:absolute;left:0;font-size:18px}
+  .eraGrid,.regionChoices{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .briefing dl{display:flex;flex-wrap:wrap;gap:16px}.briefing dl div{flex:1}
+  #modal{padding:8px}#modalBox{max-height:calc(100svh - 16px);padding:18px}
+  #modalBox h2{font-size:21px}.mfoot{margin:18px -18px -18px;padding:10px 18px;bottom:-18px;flex-wrap:wrap}
+  .mfoot .primary{min-width:0;flex:1}.mfoot .muted{flex-basis:100%}
+  .outcome{flex-wrap:wrap}.stat{gap:8px}.stat>span:last-child{text-align:right}
+  .fieldImg{height:130px}.cards{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(prefers-reduced-motion:reduce){
+  *,*:before,*:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}
+}

@@ -42,7 +42,7 @@ CP.MISSIONS = [
       { t: 'Kitabı ezberlet', log: 'yasaklı kitabı öğrencilerine ezberletti', hz: -0.012, fx: { culture: 8 } },
       { t: 'Meydanda oku', log: 'yasaklı kitabı meydanda yüksek sesle okudu', mult: 1.25, hz: 0.02, fx: { unrest: 5 } } ] } },
   { id: 'gelenek', name: 'Kültürel Gelenek Başlat', roles: ['edu', 'res'], from: 430, to: 1950, tau: 40, need: (r) => 70 - r.culture, fx: { culture: 24, awareness: 12, consumption: -12, bio: 6 }, hz: -0.012, desc: 'Ekolojik ilkeler festivallere ve hikayelere işlenir. Çok kalıcıdır.',
-    crisis: { title: 'Yeni Yönetici', text: 'Yeni yönetici eski festivali gereksiz buluyor.', opts: [
+    crisis: { title: 'Yeni Yönetici', text: 'Yeni yönetici festivali gereksiz buluyor ve meydanı pazar yerine çevirmek istiyor. Yaşlılar sana bakıyor.', opts: [
       { t: 'Festivali onun adına düzenle', log: 'festivali yöneticinin adıyla yeniden adlandırdı', hz: -0.01 },
       { t: 'Halkla birlikte direnin', log: 'festivali halkla birlikte savundu', mult: 1.2, fx: { culture: 6, unrest: 5 } } ] },
     echoes: [ { after: 80, text: '{bolge}: Eski festival hâlâ kutlanıyor. Kimse nereden geldiğini hatırlamıyor.', fx: { culture: 3 } }, { after: 500, text: '{bolge}: "Toprağa teşekkür günü" resmi tatil ilan edildi.', fx: { awareness: 4 } } ] },
@@ -62,7 +62,7 @@ CP.MISSIONS = [
       { t: 'Yavaş geçişe izin ver', log: 'geçişi yavaşlatıp güven kazandı', hz: -0.012, mult: 0.95, fx: { unrest: -4 } } ] },
     echoes: [ { after: 50, text: '{bolge}: {urun} tarlalarında yıllar sonra toprak solucanları geri döndü.', fx: { soil: 3 } } ] },
   { id: 'akim', name: 'Akım Başlat', roles: ['edu', 'res'], from: 430, to: 2070, current: true, need: (r) => 40 + r.consumption * 0.5 + r.culture * 0.2, fx: { awareness: 4 }, desc: 'Bir akım başlatırsın, sonrası kendi kendine yayılır. Kültür hızlandırır, stoiklik yavaşlatır.',
-    crisis: { title: 'Alay Konusu', text: 'Akım gazetelerde ve meclislerde alay konusu oldu.', opts: [
+    crisis: { title: 'Alay Konusu', text: 'Akım gazetelerde ve meclislerde alay konusu oldu. Katılanlar sokakta parmakla gösteriliyor.', opts: [
       { t: 'Mizahla karşılık ver', log: 'alaya mizahla karşılık verdi', mult: 1.25, fx: { culture: 5 } },
       { t: 'Sessizce örgütlen', log: 'sessizce küçük gruplar halinde örgütlendi', hz: -0.012 } ] } },
   { id: 'yasa', name: 'Yasa Kampanyası', roles: ['edu', 'res'], from: 1880, to: 2070, tau: 12, need: (r) => 75 - r.waste, fx: { env: 18, waste: 24, military: -6 }, desc: 'Bütçe hızla çevreye kayar. Etkisi hızlı görünür.',
@@ -71,7 +71,7 @@ CP.MISSIONS = [
       { t: 'Halkı sokağa çağır', log: 'halkı meydanlara çağırıp yasayı olduğu gibi geçirdi', mult: 1.3, fx: { unrest: 7 } } ] },
     echoes: [ { after: 20, text: '{bolge}: Yasa sonrası fabrikalar atıklarını {nehir} nehrine dökmeyi bıraktı.', fx: { water: 4 } } ] },
   { id: 'ifsa', name: 'Savaş Bütçesini İfşa Et', roles: ['res'], from: 1880, to: 2070, tau: 10, need: (r) => r.military * 2.2 + (r.war > 0 ? 25 : 0), fx: { military: -34, env: 10, unrest: 6 }, hz: 0.01, desc: 'Çevre fonlarının savaşa aktarıldığı ortaya çıkar. Askeri bütçe düşer, isyan riski doğar.',
-    crisis: { title: 'Kaynak Tehlikede', text: 'Belgeleri size veren memur takip ediliyor.', opts: [
+    crisis: { title: 'Kaynak Tehlikede', text: 'Belgeleri size veren memur takip ediliyor. Evinin önünde iki gündür aynı araba duruyor.', opts: [
       { t: 'Onu kaçır, yayını ertele', log: 'kaynağını güvenli yere kaçırdı', hz: -0.012, mult: 0.95 },
       { t: 'Hemen yayımla', log: 'belgeleri aynı gece yayımladı', mult: 1.3, fx: { unrest: 5 } } ] },
     echoes: [ { after: 15, text: '{bolge}: Sızan bütçe belgeleri nedeniyle savunma bakanı istifa etti.', fx: { military: -3 } } ] },
@@ -81,22 +81,22 @@ CP.MISSIONS = [
       { t: 'Şirkete sızdır, içeriden değiştir', log: 'mucidi şirkete sokup içeriden dönüştürdü', mult: 1.2, hz: 0.015, fx: { industry: -8 } } ] },
     echoes: [ { after: 25, text: '{bolge}: Unutulması gereken bir mucidin güneş bataryası seri üretime geçti.', fx: { renew: 5 } } ] },
   { id: 'kent', name: 'İklim Dirençli Kent', roles: ['sci', 'edu'], from: 1970, to: 2070, tau: 14, guard: ['sel', 'isi'], need: (r) => 85 - r.resilience, fx: { resilience: 40, water: 12, renew: 8 }, desc: 'Sünger kentler ve gölgeli sokaklar. Bölge sel ve sıcak hava dalgalarından korunur.',
-    crisis: { title: 'Pahalı Mahalle', text: 'Yeşil dönüşüm kiraları yükseltiyor. Eski sakinler taşınmak zorunda kalıyor.', opts: [
+    crisis: { title: 'Pahalı Mahalle', text: 'Yeşil dönüşüm kiraları yükseltiyor. Mahalleyi ayakta tutan eski sakinler taşınmak zorunda kalıyor.', opts: [
       { t: 'Kiraları sabitle', log: 'dönüşümde kira güvencesi sağladı', fx: { unrest: -6 }, mult: 0.95 },
       { t: 'Hızla devam et', log: 'itirazlara rağmen dönüşümü hızlandırdı', mult: 1.2, fx: { unrest: 5 } } ] },
     echoes: [ { after: 15, text: '{bolge}: Sünger kent projesi {nehir} taşkınını kayıpsız atlattı.', fx: { unrest: -3 } } ] },
   { id: 'deniz', name: 'Deniz Koruma Ağı', roles: ['res', 'sci'], from: 1880, to: 2070, guard: ['mercan', 'balik'], need: (r, g) => g.ocean * 0.8, fx: { ocean: -3, bio: 14, consumption: -6 }, desc: 'Avlanma ve plastik sınırlandırılır. Küresel okyanus yükü düşer.',
-    crisis: { title: 'Balıkçı Filosu', text: 'Yasak bölgede dev bir balıkçı filosu görüldü.', opts: [
+    crisis: { title: 'Balıkçı Filosu', text: 'Yasak bölgede dev bir balıkçı filosu görüldü. Ağları, küçük teknelerin bir yıllık avını bir gecede topluyor.', opts: [
       { t: 'Küçük balıkçılarla ortaklaş', log: 'yerel balıkçılarla denizi birlikte korudu', hz: -0.012, fx: { unrest: -3 } },
       { t: 'Görüntüleri dünyaya yay', log: 'filonun görüntülerini tüm dünyaya yaydı', mult: 1.25, fx: { awareness: 6 } } ] },
     echoes: [ { after: 30, text: '{bolge}: Koruma ağındaki balık stokları yeniden yükseliyor.', fx: { bio: 3 } } ] },
   { id: 'sifir', name: 'Sıfır Atık Mahallesi', roles: ['edu'], from: 1970, to: 2070, tau: 12, need: (r) => 90 - r.waste, fx: { waste: 38, soil: 12, consumption: -10 }, desc: 'Kompost, atık yağ toplama ve depozito. Komşular birbirinden öğrenir.',
-    crisis: { title: 'Kokan Kompost', text: 'Mahalleli kompost merkezinin kokusundan şikayetçi.', opts: [
+    crisis: { title: 'Kokan Kompost', text: 'Mahalleli kompost merkezinin kokusundan şikâyetçi. Bir imza kampanyası başladı, belediye kapatmayı düşünüyor.', opts: [
       { t: 'Atölyelerle öğret', log: 'mahallelilere kompost atölyeleri düzenledi', fx: { awareness: 8 } },
       { t: 'Merkezi büyüt, sanayileştir', log: 'kompostu endüstriyel tesise taşıdı', mult: 1.2, fx: { soil: 6 } } ] },
     echoes: [ { after: 15, text: '{bolge}: Mahalle modeli kent geneline yayıldı, çöp hacmi belirgin biçimde düştü.', fx: { waste: 4 } } ] },
   { id: 'enerji', name: 'Enerji Kooperatifi', roles: ['sci', 'edu'], from: 1970, to: 2070, tau: 14, need: (r) => 90 - r.renew + r.digital * 0.2, fx: { renew: 40, digital: -10, industry: -8 }, desc: 'Halkın ortak sahip olduğu rüzgar ve güneş santralleri.',
-    crisis: { title: 'Şebeke Reddi', text: 'Dağıtım şirketi kooperatifin elektriğini şebekeye almıyor.', opts: [
+    crisis: { title: 'Şebeke Reddi', text: 'Dağıtım şirketi kooperatifin elektriğini şebekeye almıyor. Paneller hazır, kasaba yine karanlıkta.', opts: [
       { t: 'Mahkemeye git', log: 'şebeke davasını yıllar sonra kazandı', hz: -0.012, mult: 0.95 },
       { t: 'Kendi şebekeni kur', log: 'kendi mikro şebekesini kurdu', mult: 1.25, fx: { resilience: 8 } } ] },
     echoes: [ { after: 15, text: '{bolge}: Kooperatif modeli yüzlerce kasabaya örnek oldu.', fx: { renew: 5 } } ] },
@@ -104,7 +104,7 @@ CP.MISSIONS = [
 
 // Tarih Kitabi'ndan secilen olayi onleme gorevi
 CP.BLOCK_MISSION = { id: 'degistir', name: 'Olayı Değiştir', roles: ['res', 'edu', 'sci'], tau: 8, fx: { unrest: -8, water: 8, military: -8 }, desc: 'Bu felaketi önlemek için doğrudan o yıla gidersin. Tarih direnebilir.',
-  crisis: { title: 'Son Saat', text: 'Felakete sayılı günler kaldı. Tek bir hamle yapabilirsin.', opts: [
+  crisis: { title: 'Son Saat', text: 'Felakete sayılı günler kaldı. Bunu bilen tek kişi sensin ve tek bir hamle yapabilirsin.', opts: [
     { t: 'Karar vericilerle gizlice görüş', log: 'karar vericilerle gizlice görüşüp süreci yavaşlattı', hz: -0.01 },
     { t: 'Halkı önceden uyar', log: 'halkı önceden uyarıp kitlesel tepki doğurdu', mult: 1.2, fx: { awareness: 6, unrest: 3 } } ] } };
 
@@ -132,7 +132,7 @@ CP.FIELD = [
     { t: 'Sonuçları halka asın', log: '{nehir} numunelerini meydana astı', fx: { water: 6, awareness: 5 } }, { t: 'Bilim dünyasına gönder', log: 'numuneleri uluslararası bir dergiye gönderdi', fx: { tech: 5 }, hz: -0.008 } ] },
   { role: 'res', from: 2000, to: 2070, title: 'Sensör Ağı', text: 'Nehirlere ucuz sensörler yerleştirebilirsiniz. Şirketler veriyi satın almak istiyor.', opts: [
     { t: 'Açık veri yap', log: 'nehir verilerini herkese açtı', fx: { water: 8, awareness: 4 } }, { t: 'Satıp projeyi fonla', log: 'verileri satarak projeyi fonladı', mult: 1.2, fx: { env: 4 } } ] },
-  { role: 'res', from: 2000, to: 2070, title: 'Uydu Görüntüsü', text: 'Uydu görüntüleri kaçak bir orman kesimini gösteriyor.', opts: [
+  { role: 'res', from: 2000, to: 2070, title: 'Uydu Görüntüsü', text: 'Uydu görüntüleri kaçak bir orman kesimini gösteriyor. Kesimin arkasında bölgenin en büyük işvereni var.', opts: [
     { t: 'Yerel halkla birlikte belgele', log: 'kaçak kesimi yerel halkla birlikte belgeledi', fx: { bio: 8, unrest: 2 } }, { t: 'Davayı uluslararasına taşı', log: 'davayı uluslararası mahkemeye taşıdı', mult: 1.15, fx: { military: -4 } } ] },
   { role: 'edu', from: 430, to: 1879, title: 'Köy Meydanı', text: 'Halk sizi dinliyor, ama yöneticinin danışmanı "yabancı fikirler" diye homurdanıyor.', opts: [
     { t: 'Öğretiyi masallara gizle', log: 'öğretisini masallara ve ninnilere gizledi', hz: -0.012, fx: { culture: 8 } }, { t: 'Meydanda açıkça anlat', log: 'meydanlarda açıkça ders verdi', mult: 1.2, hz: 0.015 } ] },
@@ -149,7 +149,7 @@ CP.FIELD = [
 ];
 
 // 3. karar: final, gorevin nasil kalici olacagini belirler
-CP.FINALS = { title: 'Ayrılık', text: 'Görev tamamlanıyor. Temporal Shift seni almaya gelmeden önce son kararını veriyorsun: Bu iş senden sonra nasıl yaşayacak?', opts: [
+CP.FINALS = { title: 'Ayrılık', text: 'Yıllar geçti, bu çağda yaşlandın. Geride bırakacağın iş için son kararını veriyorsun: Senden sonra nasıl yaşayacak?', opts: [
   { t: 'Yerel halka devret', log: 'işi yerel halka devretti', hz: -0.016, mult: 0.95 },
   { t: 'Sermayeyle büyüt', log: 'işi sermayeyle büyüyecek şekilde kurdu', grow: true, fx: { env: 8, military: -3 } },
   { t: 'Komşulara yay', log: 'işi komşu bölgelere yaydı', spread: 0.45, mult: 0.95 },
@@ -257,3 +257,163 @@ CP.EVENTS = [
   { id: 'pestisit', kind: 'major', from: 2000, to: 2050, once: true, p: 0.4, need: 'hasere', fx: { water: -8, agri: 4 }, text: [
     '{bolge}: Pestisit kullanımı tavan yaptı, yeraltı suları zehirlendi. Zincir 1880\'lerde başlamıştı.', '{bolge}: Tarım ilaçları {nehir} nehrinde tehlike sınırını aştı. Bir avcının yokluğu 100 yıl sonra fatura kesti.' ] },
 ];
+
+// İlk görev: 430'dan nehri fiziksel olarak değil, suyu paylaşma kültürünü korur. Etkisi Koruma görevine eşittir.
+{
+  const koruma = CP.MISSIONS.find((m) => m.id === 'koruma');
+  CP.MISSIONS.push({ ...koruma, id: 'meclis', name: 'Su Meclisi Kur', tutorialOnly: true,
+    desc: 'Çobanlar ve çiftçiler suyu birlikte paylaştırır. Kural kuşaktan kuşağa geçer.',
+    echoes: [
+      { after: 60, text: '{bolge}: Su Meclisi\'nin koruduğu {nehir} kıyılarına yaban hayatı geri döndü.', fx: { bio: 3 } },
+      { after: 200, text: '{bolge}: Su Meclisi\'nin kuralları, kurak yıllarda bölgeyi ayakta tuttu.', fx: { water: 3 } },
+    ] });
+}
+
+// Dünya Nabzı: her hedef kolunu besleyen beşer gösterge (bkz. sim.js rawTracks).
+CP.PULSE = {
+  tech: [{ key: 'tech', name: 'Bilim' }, { key: 'renew', name: 'Temiz enerji' }, { key: 'awareness', name: 'Bilinç' }, { key: 'waste', name: 'Sıfır atık' }, { key: 'resilience', name: 'Kent direnci' }],
+  eco: [{ key: 'bio', name: 'Yaban hayatı' }, { key: 'water', name: 'Tatlı su' }, { key: 'soil', name: 'Toprak' }, { key: 'ppm', name: 'Karbon', bad: true }, { key: 'ocean', name: 'Deniz yükü', bad: true }],
+  peace: [{ key: 'wars', name: 'Savaş', bad: true }, { key: 'nuke', name: 'Nükleer risk', bad: true }, { key: 'unrest', name: 'İsyan', bad: true }, { key: 'military', name: 'Askeri bütçe', bad: true }, { key: 'food', name: 'Gıda', bad: false }],
+};
+
+// Dünya örgütleri: bir gösterge yeterince iyileşince kurulur, oyuncu yönünü seçer.
+// quota: 2070 değerinin başlangıç tarihine göre iyileşmesi. wars için önlenen savaş sayısı.
+CP.ORGS = [
+  { key: 'tech', rise: 'Bilimde artış', quota: 10, speaker: 'cem', name: 'Küresel Bilim Birliği', text: 'Bilim birikimi hızla artıyor. Ülkeler ortak laboratuvarlar kuruyor.', opts: [
+    { t: 'Patentleri herkese aç', note: 'Temiz enerji yayılır, sanayi şikâyet eder.', fx: { renew: 10, tech: 4, unrest: 2 } },
+    { t: 'Bilimi okullara taşı', note: 'Bilinç ve kültür güçlenir.', fx: { awareness: 8, culture: 4 } },
+    { t: 'Gemimiz için çalıştır', note: 'Teknoloji hedefi doğrudan +%3.', proto: 3 } ] },
+  { key: 'renew', rise: 'Temiz enerjide artış', quota: 12, speaker: 'cem', name: 'Dünya Enerji Kooperatifleri Birliği', text: 'Temiz enerjinin payı büyüdü. Kooperatifler dünya çapında birleşiyor.', opts: [
+    { t: 'Kömür santrallerini kapat', note: 'Sanayi baskısı düşer, gerginlik artar.', fx: { industry: -8, renew: 8, unrest: 3 } },
+    { t: 'Yoksul bölgelere dağıt', note: 'Gıda güçlenir, isyan azalır.', fx: { renew: 5, food: 4, unrest: -3 } },
+    { t: 'Çekirdeğe enerji aktar', note: 'Gemiye +6 enerji.', energy: 6 } ] },
+  { key: 'awareness', rise: 'Ekolojik bilinçte artış', quota: 8, speaker: 'cem', name: 'Dünya Ekolojik Eğitim Konseyi', text: 'Ekolojik bilinç yayılıyor. Öğretmenler sınır tanımadan örgütleniyor.', opts: [
+    { t: 'Müfredatı zorunlu yap', note: 'Bilinç artar, tüketim düşer.', fx: { awareness: 8, consumption: -6 } },
+    { t: 'Sanat ve medyaya taşı', note: 'Kültür güçlenir.', fx: { awareness: 4, culture: 6 } },
+    { t: 'Gönüllü yetiştir', note: 'Gemiye 1 yeni uzman katılır.', crew: 1 } ] },
+  { key: 'waste', rise: 'Sıfır atıkta artış', quota: 10, speaker: 'cem', name: 'Küresel Sıfır Atık Ağı', text: 'Atıklar azalıyor. Kentler bu başarıyı büyütmek için ortak bir ağ kuruyor.', opts: [
+    { t: 'Tek kullanımlık plastiği yasakla', note: 'Atık ve tüketim düşer, gerginlik artar.', fx: { waste: 8, consumption: -4, unrest: 2 } },
+    { t: 'Mahalle onarım atölyeleri', note: 'Atık düşer, toprak güçlenir.', fx: { waste: 5, soil: 4 } },
+    { t: 'Atıktan yakıt üret', note: 'Gemiye +5 enerji.', energy: 5 } ] },
+  { key: 'resilience', rise: 'Kent direncinde artış', quota: 8, speaker: 'cem', name: 'İklim Dirençli Kentler Birliği', text: 'Kentler iklime karşı güçlendi. Belediyeler bilgi paylaşmaya başladı.', opts: [
+    { t: 'Kıyı kentlerini önceliklendir', note: 'Kent direnci büyük ölçüde artar.', fx: { resilience: 9 } },
+    { t: 'Gölge ve su tutan mahalleler', note: 'Su ve yaban hayatı da güçlenir.', fx: { resilience: 5, bio: 3, water: 3 } },
+    { t: 'Afet fonunu paylaştır', note: 'İsyan azalır.', fx: { unrest: -5, resilience: 3 } } ] },
+  { key: 'bio', rise: 'Biyoçeşitlilikte artış', quota: 8, speaker: 'cem', name: 'Dünya Yaban Hayatı Konseyi', text: 'Yaban hayatı geri dönüyor. Ülkeler ortak bir koruma ağı istiyor.', opts: [
+    { t: 'Kıtalar arası koridorlar aç', note: 'Yaban hayatı artar, tarım baskısı düşer, gerginlik artar.', fx: { bio: 8, agri: -3, unrest: 2 } },
+    { t: 'Yönetimi yerel halka ver', note: 'Yaban hayatı artar, isyan azalır.', fx: { bio: 5, unrest: -3 } },
+    { t: 'Gen bankası kur', note: 'Toprak güçlenir, Teknoloji hedefi +%1.', fx: { bio: 3, soil: 3 }, proto: 1 } ] },
+  { key: 'water', rise: 'Tatlı suda artış', quota: 8, speaker: 'cem', name: 'Dünya Su Bilinçliliği Örgütü', text: 'Tatlı su kaynakları toparlanıyor. Bu başarıyla bir dünya örgütü kuruldu.', opts: [
+    { t: 'Küresel su kotası yasası', note: 'Su çok güçlenir, tarım baskısı düşer, gerginlik artar.', fx: { water: 9, agri: -4, unrest: 3 } },
+    { t: 'Su meclislerini yay', note: 'Su ve kültür güçlenir, isyan azalır.', fx: { water: 5, culture: 4, unrest: -2 } },
+    { t: 'Su teknolojisine yatır', note: 'Bilim birikimi artar.', fx: { water: 3, tech: 5 } } ] },
+  { key: 'soil', rise: 'Toprak veriminde artış', quota: 7, speaker: 'cem', name: 'Küresel Toprak Konfederasyonu', text: 'Toprak yeniden verimli. Çiftçi birlikleri tek çatıda toplanıyor.', opts: [
+    { t: 'Tek tip tarıma vergi koy', note: 'Tarım baskısı düşer, gerginlik artar.', fx: { soil: 8, agri: -5, unrest: 2 } },
+    { t: 'Çiftçi okulları aç', note: 'Toprak ve gıda güçlenir.', fx: { soil: 5, food: 5 } },
+    { t: 'Toprağı karbon deposu yap', note: 'Toprak ve bilinç güçlenir.', fx: { soil: 3, awareness: 4 } } ] },
+  { key: 'ppm', rise: 'Karbonda düşüş', quota: 35, speaker: 'cem', name: 'Dünya Karbon Konseyi', text: 'Atmosferdeki karbon azalıyor. Ülkeler ilk kez aynı masada.', opts: [
+    { t: 'Küresel karbon vergisi', note: 'Sanayi baskısı düşer, gerginlik artar.', fx: { industry: -8, env: 6, unrest: 4 } },
+    { t: 'Dünya ormanları programı', note: 'Yaban hayatı ve su güçlenir.', fx: { bio: 5, water: 3 } },
+    { t: 'Karbon fonundan yakıt al', note: 'Gemiye +6 enerji.', energy: 6 } ] },
+  { key: 'ocean', rise: 'Deniz yükünde düşüş', quota: 10, speaker: 'cem', name: 'Okyanus İttifakı', text: 'Denizler temizleniyor. Kıyı ülkeleri ittifak kurdu.', opts: [
+    { t: 'Açık denizleri koru', note: 'Okyanus yükü çok düşer.', fx: { ocean: -10 } },
+    { t: 'Balıkçı kooperatifleri kur', note: 'Okyanus yükü düşer, gıda güçlenir.', fx: { ocean: -5, food: 3 } },
+    { t: 'Plastik toplama filosu', note: 'Okyanus yükü ve atık düşer.', fx: { ocean: -4, waste: 4 } } ] },
+  { key: 'wars', rise: 'Savaşlarda azalma', quota: 2, speaker: 'cem', name: 'Dünya Barış Konseyi', text: 'Yeterince savaşı önledin. Dünya barışı, ülkelerin çevreciliğe yönelmesine yardımcı oldu. Bu enerjiyi nereye akıtalım?', opts: [
+    { t: 'Silah bütçesini iklime aktar', note: 'Askeri bütçe düşer, çevre bütçesi artar.', fx: { military: -10, env: 8 } },
+    { t: 'Su paylaşım anlaşmaları', note: 'Su güçlenir, isyan azalır.', fx: { water: 5, unrest: -5 } },
+    { t: 'Silah fabrikalarını dönüştür', note: 'Sanayi baskısı düşer, temiz enerji artar.', fx: { industry: -4, renew: 6 } } ] },
+  { key: 'nuke', rise: 'Nükleer riskte düşüş', quota: 5, speaker: 'cem', name: 'Nükleer Silahsızlanma Anlaşması', text: 'Nükleer tehdit azaldı. Süper güçler masaya oturdu.', opts: [
+    { t: 'Başlıkları sök', note: 'Askeri bütçe düşer, gerginlik artar.', fx: { military: -8, unrest: 2 } },
+    { t: 'Diplomasiyi kurumsallaştır', note: 'İsyan azalır, kültür güçlenir.', fx: { unrest: -5, culture: 3 } },
+    { t: 'Reaktörleri gemiye bağla', note: 'Gemiye +6 enerji.', energy: 6 } ] },
+  { key: 'unrest', rise: 'İsyanlarda azalma', quota: 6, speaker: 'cem', name: 'Küresel Adalet Platformu', text: 'Toplumlar sakinleşti. Halk hareketleri ortak bir sese kavuştu.', opts: [
+    { t: 'İklim adaleti fonu', note: 'İsyan azalır, gıda güçlenir.', fx: { unrest: -6, food: 3 } },
+    { t: 'Yerel meclisleri güçlendir', note: 'İsyan azalır, kültür güçlenir.', fx: { unrest: -4, culture: 4 } },
+    { t: 'Gönüllü çağrısı yap', note: 'Gemiye 1 yeni uzman katılır.', crew: 1 } ] },
+  { key: 'military', rise: 'Askeri bütçede düşüş', quota: 5, speaker: 'cem', name: 'Silahsızlanma Bloku', text: 'Askeri bütçeler küçülüyor. Ülkeler silahsızlanma bloku kurmaya başladı.', opts: [
+    { t: 'Bütçeyi eğitime aktar', note: 'Askeri bütçe düşer, bilinç artar.', fx: { military: -6, awareness: 6 } },
+    { t: 'Gizli harcamaları ifşa et', note: 'Askeri bütçe çok düşer, gerginlik artar.', fx: { military: -8, unrest: 3 } },
+    { t: 'Savunma araştırmasını sivile çevir', note: 'Bilim ve temiz enerji güçlenir.', fx: { tech: 5, renew: 3 } } ] },
+  { key: 'food', rise: 'Gıda güvenliğinde artış', quota: 8, speaker: 'cem', name: 'Dünya Gıda Güvenliği Örgütü', text: 'Sofralar doluyor. Kıtlık artık kader sayılmıyor.', opts: [
+    { t: 'Ortak tohum bankası', note: 'Gıda ve yaban hayatı güçlenir.', fx: { food: 7, bio: 2 } },
+    { t: 'Hayvancılığı azalt', note: 'Tarım baskısı düşer, su güçlenir, gerginlik artar.', fx: { agri: -6, water: 3, unrest: 2 } },
+    { t: 'Kıtlık fonu kur', note: 'Gıda güçlenir, isyan azalır.', fx: { food: 3, unrest: -5 } } ] },
+];
+
+// Başarımlar. Yalnız anlatıdır, simülasyonu değiştirmez. Değerler bot ölçümüne göre seçildi:
+// bölge başarımları, o bölgenin müdahalesiz 2070'inde zaten sağlanıyorsa verilmez.
+CP.ACH_REGION = [
+  { id: 'renew', key: 'renew', min: 50, title: 'Yenilenebilir Enerjiye Geçiş', text: '{r} artık enerjisinin en az yarısını temiz kaynaklardan alıyor.', hint: 'Bir bölgede temiz enerjiyi 50’ye çıkar.' },
+  { id: 'water', key: 'water', min: 80, title: 'Akan Nehirler', text: '{r} susuzluğu geride bıraktı; nehirleri 2070’te de akıyor.', hint: 'Bir bölgede suyu 80’e çıkar.' },
+  { id: 'bio', key: 'bio', min: 85, title: 'Yaban Geri Döndü', text: '{r} ormanları ve kıyıları yeniden canlılarla dolu.', hint: 'Bir bölgede yaban hayatını 85’e çıkar.' },
+  { id: 'soil', key: 'soil', min: 75, title: 'Bereketli Toprak', text: '{r} toprağı çölleşmedi; hâlâ ürün veriyor.', hint: 'Bir bölgede toprağı 75’e çıkar.' },
+  { id: 'food', key: 'food', min: 75, title: 'Tok Sofralar', text: '{r} 2070’te kıtlık korkusu yaşamıyor.', hint: 'Bir bölgede gıda güvenliğini 75’e çıkar.' },
+  { id: 'waste', key: 'waste', min: 50, title: 'Sıfır Atık Yolunda', text: '{r} çöpünün yarısını yeniden kullanıma döndürüyor.', hint: 'Bir bölgede sıfır atığı 50’ye çıkar.' },
+  { id: 'awareness', key: 'awareness', min: 50, title: 'Bilinçli Kuşaklar', text: '{r} halkı doğayı korumayı okulda değil, evde öğreniyor.', hint: 'Bir bölgede çevre bilincini 50’ye çıkar.' },
+  { id: 'resilience', key: 'resilience', min: 60, title: 'Dirençli Kentler', text: '{r} kentleri sele ve sıcak dalgasına hazır.', hint: 'Bir bölgede kent direncini 60’a çıkar.' },
+  { id: 'unrest', key: 'unrest', max: 15, title: 'Sakin Sokaklar', text: '{r} sokaklarında 2070’te isyan yok.', hint: 'Bir bölgede isyan riskini 15’e indir.' },
+  { id: 'consumption', key: 'consumption', max: 15, title: 'Azla Yetinmek', text: '{r} daha az tüketerek daha iyi yaşamayı öğrendi.', hint: 'Bir bölgede tüketimi 15’e indir.' },
+];
+// test(G, h): h yardımcıları game.js'te. Metinler koşul sağlandığında gösterilir.
+CP.ACH_WORLD = [
+  { id: 'first', title: 'İlk İz', text: 'Geçmişe ilk izini bıraktın. O küçük adım hâlâ büyüyor.', hint: 'İlk görevini tamamla.', test: (G, h) => h.drops.length >= 1 },
+  { id: 'war1', title: 'Bir Savaş Eksik', text: 'Bu çizgide bir savaş hiç yaşanmadı. Kimse nedenini bilmiyor.', hint: 'Tarihten bir savaşı sil.', test: (G, h) => h.warsAvoided >= 1 },
+  { id: 'war3', title: 'Barış Elçisi', text: 'Üç savaş tarihten silindi. Sayısız insan, hiç bilmediği bir kurtuluşla yaşadı.', hint: 'Tarihten üç savaşı sil.', test: (G, h) => h.warsAvoided >= 3 },
+  { id: 'heat', title: 'Ateşi Düşürdün', text: 'Dünya, senin çizginde 2070’e daha serin ulaşıyor.', hint: 'Küresel ısınmayı 0,4 °C azalt.', test: (G, h) => h.heatDrop >= 0.4 },
+  { id: 'ppm', title: 'Daha Temiz Gökyüzü', text: 'Havadaki karbon 60 ppm azaldı. Yağmur eskisi kadar yakmıyor.', hint: 'Küresel karbonu 60 ppm azalt.', test: (G, h) => h.ppmDrop >= 60 },
+  { id: 'tech75', title: 'Bilgi Yaşıyor', text: 'Teknoloji kolu %75’e ulaştı. Makinenin çizimleri artık okunabiliyor.', hint: 'Teknoloji kolunu %75’e getir.', test: (G, h) => h.tracks.tech >= 75 },
+  { id: 'eco75', title: 'Dünya Nefes Alıyor', text: 'Ekosistem kolu %75’e ulaştı.', hint: 'Ekosistem kolunu %75’e getir.', test: (G, h) => h.tracks.eco >= 75 },
+  { id: 'peace75', title: 'Silahlar Susuyor', text: 'Barış kolu %75’e ulaştı.', hint: 'Barış kolunu %75’e getir.', test: (G, h) => h.tracks.peace >= 75 },
+  { id: 'regions', title: 'Dünya Turu', text: 'Altı ayrı bölgeye uzman bıraktın.', hint: 'Altı farklı bölgede görev yap.', test: (G, h) => new Set(h.drops.map((d) => d.region)).size >= 6 },
+  { id: 'eras', title: 'Çağlar Arası', text: 'Eski çağda, sanayi çağında ve modern çağda iz bıraktın.', hint: 'Üç çağın hepsinde görev yap.', test: (G, h) => [h.drops.some((d) => d.year < 1880), h.drops.some((d) => d.year >= 1880 && d.year < 1970), h.drops.some((d) => d.year >= 1970)].every(Boolean) },
+  { id: 'roles', title: 'Tam Kadro', text: 'Bilim insanı, araştırmacı ve eğitmen; üçü de geçmişte iz bıraktı.', hint: 'Üç uzmanlık türünün hepsini gönder.', test: (G, h) => new Set(h.drops.map((d) => d.role)).size >= 3 },
+  { id: 'old', title: 'Bin Yıllık Miras', text: '1000 yılından önce kurduğun iki yapı 2070’e sağlam ulaştı.', hint: '1000 yılından önce kurduğun iki mirası 2070’e ulaştır.', test: (G, h) => h.alive.filter((d) => d.year < 1000).length >= 2 },
+  { id: 'block', title: 'Tarihe Müdahale', text: 'Yaşanmış bir felaketin hemen öncesine gidip gidişatı değiştirmeyi denedin.', hint: 'Tarih Kitabı’ndan bir olayı önlemeye git.', test: (G, h) => h.drops.some((d) => d.mission === CP.BLOCK_MISSION.id) },
+  { id: 'orgs', title: 'Dünya Sahnesinde', text: 'Üç dünya örgütüne yön verdin.', hint: 'Üç dünya örgütü kurulmasını sağla.', test: (G) => Object.keys(G.orgs).length >= 3 },
+  { id: 'win', title: 'Son Döngü', text: 'İkinci makine tamamlandı. Döngü kapandı.', hint: 'Üç kolu da %100’e getir.', test: (G) => G.over === 'win' },
+];
+
+// Gemi Vardiyası: sıçramalar arasında 2 iş. Gemide ilgili uzman olmalı.
+CP.SHIFTS = [
+  { id: 'research', role: 'sci', name: 'Araştırma', gain: 'Teknoloji +%1,5', desc: 'Gemideki bilim insanları çalışır. Sonraki sıçramada Teknoloji hedefi +%1,5.' },
+  { id: 'media', role: 'edu', name: 'Medya kampanyası', gain: 'Görev gücü +%10', desc: 'Eğitmenler zemini hazırlar. Sonraki görevin gücü +%10.' },
+  { id: 'supply', role: 'res', name: 'Erzak ve para', gain: 'Yakıt −2', desc: 'Araştırmacılar erzak ve para hazırlar. Sonraki sıçrama 2 enerji daha ucuz.' },
+];
+
+// Kelebek haberleri: yalnız anlatıdır, dünyayı etkilemez. [başlangıç, bitiş, metin]
+CP.MISSION_NEWS = {
+  vakif_sci: [[500, 1300, '{bolge}: Vakfın defterlerini kopyalayan keşişler sulama çizimlerini de çoğalttı.'], [1300, 1800, '{bolge}: Bir usta, vakfın eski rüzgâr hesaplarıyla yeni bir değirmen kurdu.'], [1800, 1950, '{bolge}: Üniversite, kökeni bilinmeyen bir enerji notunu ders kitabına aldı.'], [1950, 2010, '{bolge}: Vakıf bursuyla okuyan bir kız, güneş hücresi üzerine doktora yaptı.'], [2010, 2069, '{bolge}: Vakfın adı, bölgenin ilk sıfır karbon laboratuvarına verildi.']],
+  vakif_res: [[500, 1300, '{bolge}: Gözlemciler {nehir} seviyesini taşa işliyor; bu taşlar yüzyıllarca okunacak.'], [1300, 1800, '{bolge}: Eski ölçüm taşları sayesinde bir sel, köylüler taşınmışken geldi.'], [1800, 1950, '{bolge}: Bir coğrafyacı, eski gözlem günlüklerinden ilk yağış haritasını çizdi.'], [1950, 2010, '{bolge}: Bin yıllık su kaydı, iklim bilimcilerin en değerli verisi oldu.'], [2010, 2069, '{bolge}: Gözlem ağının kayıtları iklim davasında kanıt olarak kabul edildi.']],
+  vakif_edu: [[500, 1300, '{bolge}: Okulun öğrencileri komşu köylerde ders vermeye başladı.'], [1300, 1800, '{bolge}: Okulun eski öğütleri atasözü olup halkın diline yerleşti.'], [1800, 1950, '{bolge}: Bir köy öğretmeni, okulun eski kitabını yeniden bastırdı.'], [1950, 2010, '{bolge}: Çocuk kitaplarına eski okulun su ve toprak öyküleri girdi.'], [2010, 2069, '{bolge}: Gençler, okulun yüzyıllık öğütlerini duvar yazısı yaptı.']],
+  gelenek: [[500, 1300, '{bolge}: Festival günü artık komşu köylerden gelenlerle kalabalık.'], [1300, 1800, '{bolge}: Bayram şarkıları ağızdan ağıza başka dillere geçti.'], [1800, 1950, '{bolge}: Halk bilimci bir gezgin, festivalin kökenini çözemedi.'], [1950, 2010, '{bolge}: Festival, ulusal televizyonda canlı yayınlandı.'], [2010, 2069, '{bolge}: UNESCO benzeri bir kurul festivali yaşayan miras saydı.']],
+  koruma: [[500, 1300, '{bolge}: Avcılar koruma alanının sınırına kadar gelip geri dönüyor.'], [1300, 1800, '{bolge}: Eski koruma alanı, kuraklıkta çevre köylerin su kaynağı oldu.'], [1800, 1950, '{bolge}: Bir demiryolu hattı, koruma alanının çevresinden dolaştırıldı.'], [1950, 2010, '{bolge}: Bilim insanları koruma alanında nesli tükendi sanılan bir kuş buldu.'], [2010, 2069, '{bolge}: Koruma alanı, yeni ulusal parkın çekirdeği oldu.']],
+  meclis: [[500, 1300, '{bolge}: Su Meclisi\'nin kuralı komşu vadide de uygulanmaya başladı.'], [1300, 1800, '{bolge}: Su paylaşımı anlaşmazlıkları artık mahkemeye değil meclise gidiyor.'], [1800, 1950, '{bolge}: Bir vali, eski su kurallarını resmî yasaya yazdırdı.'], [1950, 2010, '{bolge}: Köylüler baraj planına Su Meclisi\'nin eski kayıtlarıyla itiraz etti.'], [2010, 2069, '{bolge}: {nehir} havzasının su bütçesini bugün yine bir meclis belirliyor.']],
+  tohum: [[500, 1300, '{bolge}: Kötü bir yılın ardından köyler ekecek tohumu bankadan aldı.'], [1300, 1800, '{bolge}: Tohum takası, bölgenin en kalabalık panayırı oldu.'], [1800, 1950, '{bolge}: Bir botanikçi, bankada yok sandığı {urun} çeşidini buldu.'], [1950, 2010, '{bolge}: Eski {urun} tohumları, modern hastalığa dayanıklı çıktı.'], [2010, 2069, '{bolge}: Dünya tohum kasasına ilk gönderi buradan yapıldı.']],
+  tarim: [[500, 1300, '{bolge}: Nöbetleşe ekim yapan köyler, kuraklığı aç kalmadan atlattı.'], [1300, 1800, '{bolge}: Toprak dinlendirme takvimi köy kitaplarına işlendi.'], [1800, 1950, '{bolge}: Ziraat okulu, eski yöntemleri müfredata aldı.'], [1950, 2010, '{bolge}: Çiftçiler kimyasal gübre kampanyasına eski bilgiyle karşı çıktı.'], [2010, 2069, '{bolge}: {urun} tarlalarının altındaki toprak yeniden karbon tutuyor.']],
+  akim: [[500, 1300, '{bolge}: Akımın sözleri bir ozanın türküsüne girdi.'], [1300, 1800, '{bolge}: Akımı yasaklayan ferman, onu daha da meşhur etti.'], [1800, 1950, '{bolge}: Gazeteler akım için ilk kez alay etmeden yazdı.'], [1950, 2010, '{bolge}: Akımın sloganı, bir kuşağın tişörtlerine yazıldı.'], [2010, 2069, '{bolge}: Akım için kurulan paylaşım grubu milyon üyeye ulaştı.']],
+  yasa: [[1880, 1950, '{bolge}: Yasayla ilk kez bir fabrika sahibi ceza ödedi.'], [1950, 2010, '{bolge}: Müfettişler artık atık boruların ucundan numune alıyor.'], [2010, 2069, '{bolge}: Komşu ülkeler yasanın metnini kendi meclislerine taşıdı.']],
+  ifsa: [[1880, 1950, '{bolge}: Bütçe belgeleri meclis kürsüsünde yüksek sesle okundu.'], [1950, 2010, '{bolge}: Gazeteciler ifşayı belgesel yaptı; salonlar doldu.'], [2010, 2069, '{bolge}: Askerî harcamalar artık halka açık bir sitede yayımlanıyor.']],
+  mucit: [[1880, 1950, '{bolge}: Mucidin atölyesi, köyün çocuklarının uğrak yeri oldu.'], [1950, 2010, '{bolge}: Mucidin çırakları kendi şirketlerini kurdu.'], [2010, 2069, '{bolge}: Okullarda artık mucidin adını taşıyan bir bilim yarışması var.']],
+  kent: [[1980, 2030, '{bolge}: Sokak ağaçları, yaz sıcağında hastane başvurularını azalttı.'], [2010, 2069, '{bolge}: Başka kentlerin belediye başkanları sünger mahalleleri gezmeye geliyor.']],
+  deniz: [[1880, 1950, '{bolge}: Balıkçılar av mevsimini kendi aralarında kısalttı.'], [1950, 2010, '{bolge}: Koruma ağının içinde balıklar iki kat büyük yakalanıyor.'], [2010, 2069, '{bolge}: Çocuklar ilk kez kıyıdan yunus gördü.']],
+  sifir: [[1980, 2030, '{bolge}: Mahalle pazarında poşet sormak ayıp sayılmaya başlandı.'], [2010, 2069, '{bolge}: Mahallenin kompostu, kent parklarının toprağını besliyor.']],
+  enerji: [[1980, 2030, '{bolge}: Kooperatif üyeleri ilk kârlarını okul çatısına panel olarak taktı.'], [2010, 2069, '{bolge}: Kasaba, kış ortasında elektrik satan ilk yer oldu.']],
+  degistir: [[1880, 2069, '{bolge}: Tarihçiler o yılın neden sakin geçtiğini açıklayamıyor.']],
+};
+// Dünya haberleri: dünyanın durumuna bağlı, etkisiz içerik.
+{
+  const note = (id, from, to, cond, text, good = true) => CP.EVENTS.push({ id, kind: 'minor', from, to, once: true, good, p: 0.2, cond, fx: {}, text });
+  note('n_ciftci', 1000, 1800, (r) => r.soil > 60, ['{bolge}: Bu yıl {urun} hasadı için üç gün şenlik yapıldı.', '{bolge}: Ambarlar doldu, fazlası komşuya gönderildi.']);
+  note('n_balik', 1000, 1900, (r) => r.water > 60, ['{bolge}: {nehir} kıyısında balıkçı köyleri büyüyor.', '{bolge}: Çocuklar {nehir} kıyısında yüzmeyi öğreniyor.']);
+  note('n_kitap', 1500, 1950, (r) => r.awareness > 20, ['{bolge}: Doğa üzerine ilk dergi yayımlandı.', '{bolge}: Bir kadın botanikçi, bölgenin bitkilerini kitaplaştırdı.']);
+  note('n_park', 1900, 2040, (r) => r.bio > 55, ['{bolge}: Kentliler hafta sonları kurda rastlayınca şaşırmıyor artık.', '{bolge}: İlk millî park açıldı.']);
+  note('n_bisiklet', 1950, 2060, (r) => r.consumption < 45, ['{bolge}: Bisiklet yolu ağı kent sınırlarını aştı.', '{bolge}: İkinci el pazarları alışveriş merkezlerini geçti.']);
+  note('n_gunes', 1990, 2060, (r) => r.renew > 20, ['{bolge}: Köy okullarının çatısına güneş panelleri kuruldu.', '{bolge}: Rüzgâr türbini teknisyenliği en çok aranan meslek oldu.']);
+  note('n_bilinc', 1970, 2060, (r) => r.awareness > 30, ['{bolge}: Bir çocuk kitabı iklim üzerine çok satanlara girdi.', '{bolge}: Seçim tartışmasının ilk sorusu iklim oldu.']);
+  note('n_barış', 1950, 2060, (r) => r.unrest < 30 && r.war === 0, ['{bolge}: Eski sınır karakolu şimdi doğa gözlem istasyonu.', '{bolge}: Komşu ülkelerin gençleri ortak ağaç dikti.']);
+  note('n_gida', 1950, 2060, (r) => r.food > 55, ['{bolge}: Okul yemekleri artık yerel çiftçilerden geliyor.', '{bolge}: Eski {urun} çeşitleri pazarlara döndü.']);
+  note('n_atik', 1970, 2060, (r) => r.waste > 25, ['{bolge}: Bir tasarımcı, deniz plastiğinden okul sırası yaptı.', '{bolge}: Tamir kafeleri mahallelere yayıldı.']);
+  note('n_susuz', 1950, 2060, (r) => r.water < 40, ['{bolge}: Belediye su kesintisi takvimini gazetede yayımlıyor.', '{bolge}: Eski kuyular yeniden kazılıyor.'], false);
+  note('n_sicak', 2000, 2060, (r, g) => g.heat > 1.3 && r.resilience < 40, ['{bolge}: Yaşlılar için serin odalar açıldı.', '{bolge}: Yaz okulları sabah beşte başlıyor.'], false);
+}

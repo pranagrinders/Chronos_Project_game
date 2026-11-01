@@ -9,6 +9,26 @@
 - Hikaye içeriği `src/content.js`, dünya verisi `src/data.js` içinde, bağlantılar `CP.LINKS` tablosunda, simülasyon `src/sim.js`, kurallar `src/game.js`.
 - Denge testi: `node tools/balance.mjs`.
 
+### İlk oynanış paketi — 1 Kasım 2026
+
+- Anadolu / M.S. 430 / Koruma Toprakları göreviyle yönlendirmeli başlangıç; üç karar serbest, sonuç normal simülasyondan gelir. Eğitim atlanabilir.
+- Harita, enerji, ekip ve üç hedef kolu önde. Kartlar, geçmiş görevleri ve 15 parametre açılır panellerde; küçük ekranlarda akışkan yerleşim.
+- Her görev kartında bölgenin mevcut geleceğine göre "Neden bu görev?" açıklaması.
+- Kelebek raporu: karar → müdahale kimliğine bağlı gerçek yankılar → önceki/yeni tarih ölçümleri. Bağımsız dünya olayları ayrıntılarda ayrı gösterilir. Farklı bitiş yılları açıkça belirtilir.
+- Hazırlıktan masrafsız dönüş, klavyeyle harita erişimi, modal odak yönetimi ve azaltılmış hareket desteği. Tarih oynatılırken ikinci işlem engellenir.
+- Simülasyon, içerik ve denge katsayıları değiştirilmedi. Raporun önceki teknoloji değeri, yeni tur/kart bonusundan ayrıldı.
+- Doğrulama: `tools/experience.test.mjs`; ilk görev için 144 tohum/karar birleşimi. DOM üzerinden başlangıç, görev, rapor, kart, tarih kitabı ve yeni döngü akışı ayrıca kontrol edildi. Gerçek tarayıcıda görsel yerleşim ve insan oyuncuyla zorluk kabulü açık.
+
+
+### Sinematik gece paketi — 1 Kasım 2026
+
+- Kullanıcı sabaha kadar üretimin sürmesini istedi. Çalışma sınırı İstanbul 09.00 olarak bildirildi; aynı sohbete bağlı yarım saatlik otomasyon kuruldu.
+- İlk Anadolu görevi artık sahne tabanlı: komuta odası, havza brifingi, atlanabilir zamansal geçiş, fayda/bedel açıklamalı üç karar, gerçek tarihten akış ve önceki/yeni çizgi karşılaştırması.
+- Dört AI ortam illüstrasyonu; kodla kamera hareketi, sis, parçacık, su parıltısı ve oyun verisinden gelecek karışımı. Promptlar ve kaynak bilgisi assets/cinema içinde.
+- İsteğe bağlı prosedürel ortam sesi, ortak ses ayarı, azaltılmış hareket, klavye odak yönetimi ve küçük ekran düzeni.
+- Tek örnek görevin sunumu yenilendi; serbest dünya ve diğer görevler mevcut arayüzden devam eder. ?classic eski görünümü açar.
+- Kontroller: 11 mantık testi/144 eğitim senaryosu, 39 sinematik ve 28 klasik DOM kontrolü. Tarayıcı ekran görüntüsü, sesin kulakla kontrolü ve insan oyuncu kabulü açık.
+
 Aşağıdaki bölümler ilk öneri metnidir; yukarıdaki kararlarla çelişirse yukarıdakiler geçerlidir.
 
 ---
@@ -170,3 +190,30 @@ Görsel notu: Mock'lardaki metinler görsele gömülü ve kısmen bozuk ("Kost:"
 1. Fatih'in rahat ettiği araç nedir? Unity/Godot'ta çok güçlüyse §6 yeniden değerlendirilir.
 2. Hackathon kuralları yapay zeka ile üretilen görsel ve kodu kabul ediyor mu, beyan gerekiyor mu?
 3. Teslim saati ve tam teslim paketi resmi olarak nedir?
+
+### Sinematik v0.3 — karar açıklığı ve güverteye dönüş
+
+- Araştırmacı için özgün şeffaf portre ve üç kararın bağlamını açıklayan kısa saha notları.
+- Fayda/bedel listeleri artık kesilmiyor: sermaye yolunun çevre ve barış katkısı birlikte görünür.
+- İlk görevden sonra atmosferik komuta güvertesi: gerçek enerji/ekip/kuruluş sayısı, geride kalan hedef kolu, son kuruluşun gerçek miras durumu; buradan harita, yeni görev planı ve Tarih Kitabı erişimi. Haritada Gemi düğmesi.
+- Önceki/yeni çizgi karşılaştırmasının başlık/yıl etiketi seçilen çizgiyle eşleşir.
+- Tarih akışında ölçümler yalnız gerçek tarih adımı değişince, canlı altyazı yalnız metin değişince güncellenir; kamera akışı sürer.
+- Kontroller: 13 mantık testi/144 ilk görev senaryosu; 49 sinematik + 28 klasik DOM kontrolü. Gerçek tarayıcı görsel yerleşimi ve kulakla ses kabulü hâlâ açık.
+
+### v0.4 — yerel kayıt ve devam
+
+- Kayıtta büyük tarih tabloları yok: seed, gerçek müdahaleler/kararlar ve kaynaklar saklanır; dünya deterministik olarak yeniden hesaplanır.
+- Tamamlanan tur, kart kullanımı, mektup yanıtı/yanıtsız bırakma ve oyun sonu kaydedilir. Haritada Kaydet; açılışta Döngüye devam et / Son döngüyü gör. Eğitim ve serbest başlangıç tercihi korunur.
+- Yeni döngü kaydedildiğinde önceki ham kayıt ayrı anahtarda yedeklenir. Bozuk/sürümü desteklenmeyen kayıt açılışta silinmez. Depolama engeli veya kota hatası başarı gibi gösterilmez.
+- Henüz tamamlanmamış tur/rapor veya planlama seçimleri otomatik kayıtta tamamlanmış sayılmaz. Kayıt alanı tarayıcı/dosya kökenine bağlıdır; dosya erişimi kısıtlıysa açık sekmede devam edilir.
+- 23 mantık testi (144 ilk görev senaryosu dahil), 49 sinematik + 28 klasik + 37 kayıt/devam DOM kontrolü geçti. Kart/yama/kalkan/geri alma, mektup, akım, olay önleme, bozuk kayıt, yedek ve depolama hatası kapsamda.
+- Gerçek tarayıcı görsel/ses ve file:// depolama davranışı bu ortamda doğrulanmadı; mevcut güvenlik engeli dolanılmadı.
+
+### v0.5 — sahne stili, ses ve sonuç açıklığı
+
+- Gerçek stil çakışması düzeltildi: komuta UI'ının genel aside/flex kuralı araştırmacı portresi/metnini dikey yapıyordu. Sahne araştırmacısı yatay, sonuç ve güverte bölümleri blok olarak açıkça kapsamlandı. Başlık nowrap sızıntısı kaldırıldı.
+- Ortam ve kısa geçiş/varış/sonuç sesleri ayrı scene-audio modülünde. Sahne kapanınca veya sessize alınınca fade sonrası bağlam askıya alınır; gelecekte çalacak kısa notalar iptal edilir. Gizli sekme ve sayfa kapanışı temizlenir; geri/ileri önbelleğinden dönülebilir.
+- Sinematik görev başlangıcı/sonucunda klasik UI'ın ikinci ses bağlamı açması kaldırıldı. Klasik mod kendi seslerini korur.
+- Sonuçta toplumsal gerilim önce/yeni ölçümü görünür; ekoloji iyileşse bile gerilim/hedef kolu kötüleşirse karma sonuç olarak anlatılır.
+- Sahne kapanınca odak görünür komuta kontrolüne geri döner. Tab/Shift-Tab, görünürlük, mute ve sayfa yaşam döngüsü denetlendi.
+- 31 mantık/ses sözleşme testi; 49 sinematik + 28 klasik + 37 kayıt + 25 stil/odak/ses davranış kontrolü (139 DOM) geçti. Stil hesapları ve WebAudio test çiftleri ekran görüntüsü veya ses dinleme kabulü değildir. Gerçek tarayıcı/görüntü/ses/file-origin kabulü açık.
