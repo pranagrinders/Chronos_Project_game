@@ -69,9 +69,8 @@ Dar ekranlarda şerit iki satıra geçer. Açılışta kayıt/yeni döngü seçi
 kaynaklar gösterilmez. Özel kaynak ikonları SVG'dir; yeni font veya ağ isteği yoktur.
 
 
-v0.9anlatı akışında haritadan bölge seçmek kişi üzerinden bir çağrı açar;ölçümler
-**Bölge raporu**ndadır. Serbest görevlerde de Leyla veya Cem isteği ve gerekçeyi
-aktarır. İlk Anadolu görevindeki otlak çatışmasını kurmaca çoban Dara anlatır.
+Haritadan bölge seçmek bölge bilgilerini açar; sıçrama oradan planlanır. Serbest görevlerde
+Leyla veya Cem isteği ve gerekçeyi aktarır. İlk Anadolu görevindeki otlak çatışmasını kurmaca çoban Dara anlatır.
 Bir karar resmine basmak önizlemeyi açar;**Bu kararı onayla**ile ilerlersin.
 Son onayda gerçek görev bedeli ödenir. Önizleme eylemin temsili canlandırmasıdır,
 gelecekteki ölçülmüş sonuç değildir.

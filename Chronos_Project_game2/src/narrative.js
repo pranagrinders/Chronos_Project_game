@@ -26,13 +26,6 @@ globalThis.CP = globalThis.CP || {};
     degistir:['cem','Bu olayın mevcut tarihte nasıl bittiğini biliyoruz. Hemen öncesine gidip gidişatı değiştirmeyi deneyebiliriz.'],
   };
   const request = (offer) => { const [speaker,line] = requests[offer.m.id] || ['leyla',offer.m.desc];return{speaker,line}; };
-  function regionCall(G,id){
-    const r=G.tl.final.regions[id],name=CP.REGIONS.find(r=>r.id===id).name;
-    if(r.unrest>45||r.war>0)return{speaker:'cem',title:'Gerilim büyüyor.',line:`${name} kayıtlarında çatışmanın izleri var. Önce insanların neye tepki gösterdiğini anlayalım; yalnız doğaya müdahale etmek yetmeyebilir.`,focus:'Toplumsal gerilim'};
-    if(r.water<50)return{speaker:'leyla',title:'Nehirden geriye ne kalacak?',line:`${name} için tuttuğum kayıtlarda su baskı altında. Geçmişte bırakacağımız bir kuruluş, bu gidişata müdahale edebilir.`,focus:'Su ve yaşam alanları'};
-    if(r.food<50)return{speaker:'cem',title:'Bir sonraki hasat belirsiz.',line:`${name} kayıtları gıda güvenliğinin kırılgan olduğunu gösteriyor. Tohum, toprak ve insanların geçimi birlikte düşünülmeli.`,focus:'Gıda güvenliği'};
-    return{speaker:'leyla',title:'Korunacak bir şey hâlâ var.',line:`${name} için hemen bir felaket beklememiz gerekmiyor. Buradaki kazanımları kuşaklara aktaracak bir görev seçebiliriz.`,focus:'Uzun vadeli koruma'};
-  }
   const voiceAvailable = () => window.speechSynthesis?.getVoices().find(v=>v.localService && /^tr(?:-|_)/i.test(v.lang));
   function stopVoice(){window.speechSynthesis?.cancel();}
   function dialogue(who,line,extra=''){
@@ -112,5 +105,5 @@ globalThis.CP = globalThis.CP || {};
     const draw=t=>{if(cancelled||!node.isConnected)return;const f=actionFrame(t,kind);node.style.setProperty('--action-progress',String(f.e));node.querySelector('.storyRoute').style.strokeDashoffset=String(280-f.route);node.querySelector('[data-action-paper]').setAttribute('transform',`translate(${f.paperX} ${f.paperY})`);node.querySelector('[data-action-gate] path').style.strokeDasharray='180';node.querySelector('[data-action-gate] path').style.strokeDashoffset=String((1-f.e)*180);if(f.p<1&&!reduce)requestAnimationFrame(now=>draw((now-start)/1000));};
     draw(reduce?2.8:0);return()=>{cancelled=true;};
   }
-  CP.story={cast,prologue,tutorialHint,request,regionCall,dialogue,bindVoices,stopVoice,stageSpeaker,stageLine,visual:visualFor,choiceLead,art,animateArt,actionFrame,esc,muted:false};
+  CP.story={cast,prologue,tutorialHint,request,dialogue,bindVoices,stopVoice,stageSpeaker,stageLine,visual:visualFor,choiceLead,art,animateArt,actionFrame,esc,muted:false};
 })();

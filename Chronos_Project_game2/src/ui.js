@@ -11,7 +11,20 @@
   const FAST = qs.has('fast');
   const CINEMA = CP.cinema && !qs.has('classic');
   document.body.classList.toggle('storyMode', !!CINEMA);
-  if (CINEMA) $('#right').append($('#legacyDrawer'));
+  // Anlatı düzeni: sağ kolon yok. Solda ekip lideri, kartlar ve seyir ekranı, sağda büyük harita.
+  if (CINEMA) {
+    const header = $('#app>header'), leader = document.createElement('div');
+    leader.id = 'leader';
+    leader.innerHTML = '<img src="assets/cinema/cem.png" alt="Dr. Cem Sönmez, kurmaca oyun karakteri"><div><b>Dr. Cem Sönmez</b><small>Ekip lideri · Temporal Shift</small></div>';
+    leader.lastElementChild.append($('#guide'));
+    header.append(leader);
+    $('#left').append($('#cardDrawer'), $('#legacyDrawer'), $('#dataDrawer'), $('#view'));
+    $('#view').prepend($('#window'));
+    $('#view>span').textContent = 'SEYİR EKRANI';
+    const hint = document.createElement('p');
+    hint.id = 'mapHint'; hint.textContent = 'Sıçramak için haritadan bir bölge seç';
+    $('#mapWrap').append(hint);
+  }
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   const hist = (y) => { const h = G.tl.history; return h.find((s) => s.y === y) || h[h.length - 1]; };
@@ -252,7 +265,7 @@
     }
     if (guidedStart && G.jumps === 0) g.innerHTML = '<b>İlk görev:</b> Anadolu’da suyun izini değiştir. Hazır olduğunda ilk göreve başla.';
     else if (G.jumps === 0) g.innerHTML = '<b>Bir bölge seç.</b> Sorunu gör, geçmişe bir görev planla.';
-    else if (G.jumps === 1) { const focus = CP.nextFocus ? CP.nextFocus(G) : null; g.innerHTML = focus ? `<b>${focus.label}.</b> ${focus.message}` : '<b>2. adım:</b> Üç kol da dolmalı: Teknoloji, Ekosistem, Barış. Hangisi geride, ona bak.'; }
+    else if (G.jumps === 1) { const focus = CP.nextFocus ? CP.nextFocus(G) : null; g.innerHTML = focus ? `<b>${focus.label}.</b> ${focus.message.split('. ')[0].replace(/\.$/, '')}.` : '<b>2. adım:</b> Üç kol da dolmalı: Teknoloji, Ekosistem, Barış. Hangisi geride, ona bak.'; }
     else if (G.jumps === 2) g.innerHTML = '<b>İpucu:</b> <b>Tarih Kitabı</b>\'ndaki felaketleri seçip önlemeye gidebilirsin.';
     else if (G.jumps === 3) g.innerHTML = '<b>İpucu:</b> Akımlar kendi kendine yayılır. Kültürü yüksek bölgelerden başlatmak daha hızlıdır.';
     else g.innerHTML = 'Hedef: <b>Üç kolu da %100\'e çıkar.</b> Enerjin ve timin bitmeden yetiştir.';
@@ -260,10 +273,11 @@
 
   function renderAll() {
     CP.hud?.render(G); CP.hud?.setVisible(seenIntro || qs.has('skip') || G.jumps > 0);
-    if (CINEMA) { renderDispatch(sel || 'ana'); if (!CP.cinema.active && CP.sceneAudio.initialized && !muted && !document.hidden) CP.sceneAudio.play('bridge'); }
+    if (CINEMA) { if (!CP.cinema.active && CP.sceneAudio.initialized && !muted && !document.hidden) CP.sceneAudio.play('bridge'); }
     paintMap(); ticker(); renderPool(); renderPulse(); renderShift(); renderCrew(); renderCore(); renderDrops(); renderProto(); renderHand(); renderTimeline(); guide(); paintWindow();
     $('#btnJump').disabled = replaying || !!G.over || !CP.canAct(G) || G.energy < CP.minCost();
-    $('#btnJump').textContent = guidedStart && G.jumps === 0 ? 'İLK GÖREVE BAŞLA' : CP.canAct(G) ? 'SIÇRAMA HAZIRLIĞI' : 'GEMİDE KİMSE YOK';
+    $('#btnJump').textContent = guidedStart && G.jumps === 0 ? 'İLK GÖREVE BAŞLA' : CP.canAct(G) ? (CINEMA ? 'LİSTEDEN BÖLGE SEÇ' : 'SIÇRAMA HAZIRLIĞI') : 'GEMİDE KİMSE YOK';
+    if (CINEMA) $('#mapHint').hidden = replaying || !!G.over || !CP.canAct(G) || G.energy < CP.minCost();
     $(`#r_ana`).classList.toggle('tutorialTarget', guidedStart && G.jumps === 0);
     $('#btnBook').disabled = replaying;
     $('#btnEnd').disabled = replaying;
@@ -308,23 +322,8 @@
   });
 
   // ---- Bolge paneli ----
-  function renderDispatch(id) {
-    const box = $('#dispatch'); if (!box || !CP.story) return;
-    const call = CP.story.regionCall(G, id), esc = CP.story.esc;
-    box.hidden = false;
-    box.innerHTML = `<p class="dispatchEyebrow">2070 KAYITLARI · ${esc(REG[id].name)}</p><h2>${esc(call.title)}</h2>${CP.story.dialogue(call.speaker, call.line)}<p class="dispatchFocus">Bakacağımız mesele: <b>${esc(call.focus)}</b></p>
-      <button class="primary" id="dPlan" ${G.over || !CP.canAct(G) || G.energy < CP.minCost() ? 'disabled' : ''}>Bu bölge için görev seç →</button><button class="ghost" id="dInspect">Bölge raporunu aç</button>`;
-    CP.story.bindVoices(box);
-    $('#dPlan').onclick = () => openEra(id); $('#dInspect').onclick = () => openRegionDetails(id);
-  }
   function openRegion(id) {
-    if (!CINEMA) return openRegionDetails(id);
-    if (replaying || G.over) return;
-    if (guidedStart && G.jumps === 0) return firstBriefing();
-    sel = id;
-    document.querySelectorAll('.region').forEach(p => p.classList.toggle('sel', p.id === 'r_' + id));
-    renderDispatch(id); $('#dPlan').focus(); CP.sceneAudio.play('bridge'); CP.sceneAudio.cue('open');
-    if (matchMedia('(max-width: 900px)').matches) $('#dispatch').scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+    openRegionDetails(id);
   }
   function openRegionDetails(id) {
     if (replaying || G.over) return;
@@ -358,7 +357,7 @@
       <h3>Buradaki Görevler</h3>${drops.map((i) => `<div>${i.year}: ${CP.missionById(i.mission).name}</div>`).join('') || '<div style="color:var(--dim)">Yok</div>'}
       </div></div>
       <div class="mfoot"><button id="mClose">Kapat</button><button class="primary" id="mPlan" ${!CP.canAct(G) || G.energy < CP.minCost() ? 'disabled' : ''}>Buraya Sıçrama Planla</button></div>`);
-    $('#mClose').onclick = closeModal;
+    $('#mClose').onclick = () => { if (CINEMA) { sel = null; document.querySelectorAll('.region.sel').forEach((p) => p.classList.remove('sel')); } closeModal(); };
     $('#mPlan').onclick = () => openEra(id);
   }
 
@@ -370,7 +369,7 @@
   function openPlanner() {
     if (replaying || G.over) return;
     if (guidedStart && G.jumps === 0) return firstBriefing();
-    if (sel) return openEra(sel);
+    if (sel && !CINEMA) return openEra(sel);
     const crisis = [...REGIONS].sort((a, b) => score(G.tl.final.regions[a.id]) - score(G.tl.final.regions[b.id])).slice(0, 3).map((r) => r.id);
     modal(`${stepHead(1, 'Hangi bölge?')}<div class="shiftBar"></div><div class="optGrid regionChoices">${REGIONS.map((r) => `<button class="opt ${crisis.includes(r.id) ? 'crit' : ''}" data-reg="${r.id}"><b>${r.name}</b>${r.arch}${crisis.includes(r.id) ? ' · <span class="dn">KRİTİK</span>' : ''}</button>`).join('')}</div>
       <div class="mfoot"><button id="mClose">Vazgeç</button></div>`);
@@ -628,12 +627,13 @@
     { target: '#resourceHud .hudCrew', title: 'Ekibin', text: 'Her göreve bir uzman gider ve o çağda kalır. Bilim, Araştırma ve Eğitim uzmanları farklı görevler yapar.' },
     { target: '#resourceHud .hudPrototype', title: 'Asıl hedefin', text: 'Teknoloji, Ekosistem ve Barış. Üçü de %100 olunca ikinci makine tamamlanır ve oyunu kazanırsın.' },
     { target: '#pulse', title: 'Dünya Nabzı', text: 'Her hedefi beşer gösterge besler; burada iyileşen şey hedefi de doldurur. Bir göstergenin çubuğu dolunca dünya örgütü kurulur ve yönünü sen seçersin.' },
-    { target: '#mapWrap', title: 'Dünya haritası', text: 'Renkler bölgelerin durumunu gösterir. Bir bölgeye bas; ekibin oranın sorununu anlatır, görev oradan başlar.' },
+    { target: '#mapWrap', title: 'Dünya haritası', text: 'Renkler bölgelerin durumunu gösterir. Bir bölgeye bas; bilgileri açılır, sıçramayı oradan planlarsın.' },
     { target: '#tlBar', title: 'Zaman çizelgesi', text: 'Bir çağa bas, o yılın dünyasını haritada gör. Geçmişi değiştirdikçe bu çizgi de değişir.' },
     { target: '#cardDrawer', title: 'Karar kartların', text: 'Görev sonunda kazandığın kartlar burada durur. Açıp bir karta basarak oynarsın. En fazla 4 kart taşıyabilirsin.', open: true },
+    { target: '#view', title: 'Seyir ekranı', text: 'Geminin penceresi. Dünya iyileştikçe yağmur diner, gökyüzü açılır.' },
     { target: '#ops .tabs', title: 'Gemi ve Tarih Kitabı', text: 'Gemi seni komuta güvertesine götürür. Tarih Kitabı, değiştirdiğin her olayı yıl yıl gösterir.' },
     { target: '#shiftBar', title: 'Gemi vardiyası', text: 'Her sıçramadan önce 2 iş seç: araştırma, medya, erzak. Gemide ilgili uzman olmalı; kimi göndereceğini buna göre düşün.' },
-    { target: '#btnJump', title: 'Yeni görev', text: 'Hazır olunca buradan yeni bir sıçrama planlarsın. Artık bölgeyi, çağı ve uzmanı sen seçiyorsun.' },
+    { target: '#btnJump', title: 'Yeni görev', text: 'Haritadan bölge seçmek yerine buradaki listeyi de kullanabilirsin. Artık bölgeyi, çağı ve uzmanı sen seçiyorsun.' },
   ];
   function mapTour(done) {
     const tour = document.createElement('div');
@@ -867,7 +867,13 @@
     if (vt) vt.textContent = windowTarget < 0.25 ? 'Asit yağmuru, kapalı gökyüzü' : windowTarget < 0.55 ? 'Dumanlı ama yağmur seyrek' : windowTarget < 0.8 ? 'Bulutlar açılıyor' : 'Açık gökyüzü, temiz hava';
     if (reducedMotion) { windowHealth = windowTarget; frame(); }
   }
-  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  function resize() {
+    const host = CINEMA ? $('#view') : null;
+    cv.width = host ? Math.max(1, host.clientWidth) : innerWidth;
+    cv.height = host ? Math.max(1, host.clientHeight) : innerHeight;
+    if (reducedMotion && G) frame();
+  }
+  if (CINEMA && globalThis.ResizeObserver) new ResizeObserver(resize).observe($('#view'));
   addEventListener('resize', resize);
   function frame() {
     if (CP.cinema?.active) { if (!reducedMotion) requestAnimationFrame(frame); return; }
@@ -884,7 +890,7 @@
       ctx.fillRect(x, H - bh, bw, bh);
       if (b.lit < 0.6) { ctx.fillStyle = `rgba(${h > 0.5 ? '180,240,200' : '230,90,80'},.35)`; ctx.fillRect(x + bw * 0.3, H - bh + 8, bw * 0.3, 3); }
     }
-    const rain = reducedMotion ? 0 : Math.round(160 * (1 - h));
+    const rain = reducedMotion ? 0 : Math.round((CINEMA ? 60 : 160) * (1 - h));
     while (drops.length < rain) drops.push([Math.random() * W, Math.random() * H, 8 + Math.random() * 12]);
     drops.length = rain;
     ctx.strokeStyle = 'rgba(150,190,210,.22)'; ctx.beginPath();
@@ -900,7 +906,7 @@
     saveNotice = savedRun.status === 'unavailable' ? 'Bu tarayıcıda kayıt alanına erişilemiyor.' : '';
     CP.cinema?.close();
     viewYear = 2070; sel = null; guidedStart = !seenIntro && !qs.has('skip'); lastKeys = new Set(); compareTl = null;
-    for (const id of ['legacyDrawer', 'cardDrawer', 'dataDrawer']) $('#' + id).open = false;
+    for (const id of ['legacyDrawer', 'cardDrawer', 'dataDrawer']) $('#' + id).open = !!CINEMA && id === 'cardDrawer';
     renderAll(); closeModal();
     if (!seenIntro && !qs.has('skip')) intro();
   }

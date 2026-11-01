@@ -272,7 +272,7 @@ CP.EVENTS = [
 // Dünya Nabzı: her hedef kolunu besleyen beşer gösterge (bkz. sim.js rawTracks).
 CP.PULSE = {
   tech: [{ key: 'tech', name: 'Bilim' }, { key: 'renew', name: 'Temiz enerji' }, { key: 'awareness', name: 'Bilinç' }, { key: 'waste', name: 'Sıfır atık' }, { key: 'resilience', name: 'Kent direnci' }],
-  eco: [{ key: 'bio', name: 'Yaban hayatı' }, { key: 'water', name: 'Tatlı su' }, { key: 'soil', name: 'Toprak' }, { key: 'ppm', name: 'Karbon', bad: true }, { key: 'ocean', name: 'Okyanus yükü', bad: true }],
+  eco: [{ key: 'bio', name: 'Yaban hayatı' }, { key: 'water', name: 'Tatlı su' }, { key: 'soil', name: 'Toprak' }, { key: 'ppm', name: 'Karbon', bad: true }, { key: 'ocean', name: 'Deniz yükü', bad: true }],
   peace: [{ key: 'wars', name: 'Savaş', bad: true }, { key: 'nuke', name: 'Nükleer risk', bad: true }, { key: 'unrest', name: 'İsyan', bad: true }, { key: 'military', name: 'Askeri bütçe', bad: true }, { key: 'food', name: 'Gıda', bad: false }],
 };
 

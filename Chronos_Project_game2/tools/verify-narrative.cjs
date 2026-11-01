@@ -33,11 +33,11 @@ try{
  check($('#cChoiceDetails .cChoiceCost').textContent.includes('Toplumsal gerilim artar'),'Sınırın insanlara bedeli görünür; yalnız yeşil fayda gösterilmez');
  click('#cConfirm');choose(0);check(G.jumps===1&&G.energy<100&&G.crew.res===1,'Üçüncü onay tek gerçek sıçramayı gerçekleştirir');
  click('#cSkip');click('#cContinue');click('#cMap');
- check($('#left').querySelector('#legacyDrawer')===null&&$('#right').contains($('#legacyDrawer')),'Geçmiş kuruluş eylemleri sadeleştirilen haritada erişilebilir kalır');
- click('#r_kam');check($('#modal').classList.contains('hidden')&&$('#dispatch').textContent.includes('Kuzey Amerika'),'Harita seçimi tablo açmak yerine insanın bölge çağrısını gösterir');
- check(!!$('#dispatch .storyDialogue img')&&!!$('#dPlan'),'Harita çağrısında konuşmacı ve tek görev eylemi görünür');
- click('#dInspect');check(!$('#modal').classList.contains('hidden')&&$('#modalBox').textContent.includes('Yatırım Dağılımı'),'Ayrıntılı eski bölge ölçümleri ayrı rapordan hâlâ açılır');click('#mClose');
- click('#dPlan');click('[data-era="2026"]');
+ check($('#left').contains($('#legacyDrawer'))&&$('#left').contains($('#cardDrawer')),'Geçmiş kuruluş eylemleri sadeleştirilen haritada erişilebilir kalır');
+ check(!$('#dispatch')&&!!$('#leader img')&&$('#view').contains($('#window'))&&!!$('#mapHint'),'Sağ kolon yok; ekip lideri, seyir ekranı ve harita yönergesi var');
+ click('#r_kam');check(!$('#modal').classList.contains('hidden')&&$('#modalBox').textContent.includes('Yatırım Dağılımı'),'Haritadan bölge seçmek bölge bilgilerini açar');
+ click('#mClose');check(!w.document.querySelector('.region.sel'),'Bilgi penceresi kapanınca bölge seçimi temizlenir');
+ click('#r_kam');click('#mPlan');click('[data-era="2026"]');
  check([...w.document.querySelectorAll('[data-m]')].every(e=>e.querySelector('.missionRequester img')&&e.querySelector('.missionQuote')),'Serbest görevlerin her birini bir kişi ister ve nedenini söyler');
  click('[data-m="0"]');
  check($('#cinema').dataset.mode==='decision'&&$('#cinema').textContent.includes('2026'),'Serbest görev de karakterli sahneye geçer,430yılına zorlanmaz');
