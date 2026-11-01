@@ -590,7 +590,7 @@
       ${story.changes.length ? `<h3>${story.name}</h3>${story.changes.map((x) => `<div class="stat"><span>${x.label}</span><span>${Math.round(x.a)} → <b>${Math.round(x.b)}</b> ${mag(x.d, x.inverse)}</span></div>`).join('')}` : ''}
       ${world.length ? `<h3>Dünya</h3>${world.map((x) => `<div class="stat"><span>${worldName[x.k][0]}</span><span>${Math.round(x.a)} → <b>${Math.round(x.b)}${worldName[x.k][2]}</b> ${mag(x.d, worldName[x.k][1])}</span></div>`).join('')}` : ''}
       ${d.newMilestones.length ? `<h3>Yeni Eşikler</h3>${d.newMilestones.slice(0, 2).map((m) => `<div class="mile">★ ${REG[m.r].name}: ${m.name}</div>`).join('')}` : ''}
-      ${r ? `<div class="stat reportEnergy"><span>Enerji</span><span>${f(r.energyBefore)} → <b>${f(r.energyAfter)}</b></span></div>` : ''}</section></div>`;
+      ${r ? `<div class="stat reportEnergy"><span>Enerji</span><span>${f(r.energyBefore)} → <b>${f(r.energyAfter)}</b></span></div><p class="muted reportEnergyNote">−${f(r.spent)} sıçrama · +${f(r.recovered)} ikmal${r.saved ? ` · ${f(r.saved)} tasarruf` : ''}${r.shipResearch ? ` · Gemi araştırması +${f(r.shipResearch)} teknoloji bonusu` : ''}</p>` : ''}</section></div>`;
   }
   function showReport(rep, details = false) {
     if (!(CINEMA && rep.tutorial && !details && !G.over)) {

@@ -46,7 +46,7 @@ try {
   app.flush();
   check(text().includes('Kelebek Raporu') && text().includes('Kelebek Etkisi') && text().includes('İkinci Prototip') && text().includes('Anadolu'), 'Rapor solda kelebek etkisini, sağda ölçümleri gösterir');
   check(!/undefined|NaN/.test(text()), 'Raporda eksik değer veya bozuk sayı yok');
-  check(text().includes('Bu Sıçramanın Kaynakları')&&text().includes('ikmal'), 'Klasik raporda enerji harcaması ve ikmal ayrılır');
+  check(text().includes('Enerji')&&text().includes('ikmal'), 'Klasik raporda enerji harcaması ve ikmal ayrılır');
   check(w.CP.debug.G.jumps === 1 && w.CP.debug.G.ivs[0].choices.length === 3, 'Üç karar tek gerçek sıçrama oluşturur');
   click('[data-off]');
   check($('#modal').classList.contains('hidden') && $('#btnJump').textContent === 'SIÇRAMA HAZIRLIĞI', 'İlk rapordan sonra serbest komutaya geçilir');
