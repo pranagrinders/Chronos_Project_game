@@ -1,0 +1,22 @@
+[
+  {
+    "key": "cem",
+    "transparent_background": true,
+    "prompt": "Create a standalone original fictional character portrait for the Chronos time-travel narrative strategy game, transparent background. Bust/waist-up portrait of Dr Cem Sonmez, a Turkish/Mediterranean male scientist aged 48, short salt-and-pepper dark hair, gentle tired eyes, light stubble, worn charcoal technical jacket over dark knit, a small plain brass instrument clipped to chest. Painterly realistic premium strategy-game illustration, textured brushwork, credible face and hands, restrained ochre warm key light from right with cool dark teal rim from left. Three quarter view facing slightly left toward dialogue text. Full head and shoulders with natural cutout edges, no badge text, no UI, no writing, no logos, no white border, no pedestal. Calm and concerned rather than heroic fashion model. This is a fictional game character, not a real person."
+  },
+  {
+    "key": "dara",
+    "transparent_background": true,
+    "prompt": "Create a standalone original fictional portrait for the Chronos narrative strategy game, transparent background. Bust/waist-up portrait of Dara, a 45-year-old local woman who herds goats in an Anatolian river valley around 430 CE. Weathered expressive Mediterranean face, dark eyebrows, brown eyes, dark hair loosely wrapped in undyed linen, practical coarse wool ochre-brown mantle and linen tunic, one hand holding the upper part of a plain wooden shepherd staff. No crown, no armor, no modern ornaments. Facing slightly right as she explains a serious concern about grazing land. Painterly realistic premium strategy-game illustration, warm amber afternoon key and cool slate rim, subtle visible brush texture, grounded human expression. Full head and shoulders, natural alpha cutout edge, no writing, no UI, no logo, no frame. Original fictional person, not a claimed historical portrait."
+  },
+  {
+    "key": "common-grazing",
+    "transparent_background": false,
+    "prompt": "A single cinematic narrative-strategy game action illustration, wide landscape 3:2. In an Anatolian river valley around 430 CE, foreground: three villagers, an older woman herder, a farmer and a travelling woman researcher in a muted practical cloak, sit around a low rough wood table with a simple wooden water bowl and unlabeled small stones representing pastures. Behind them a small mixed flock grazes in a meadow beside a stream; distant low village and dry rolling mountains. Main visual action is people agreeing together how to share grazing and protected riverside ground. Rich painterly semi-realism with visible brush texture, emotionally credible figures, warm natural afternoon light and cool river shadows. Earthy moss, ochre, ink-slate, restrained glow. Camera near human eye height, foreground sharply readable, beautiful atmospheric depth. No text, no labels, no maps with writing, no UI, no panels, no split frame, no modern buildings or equipment. One unified illustration, realistic human proportions."
+  },
+  {
+    "key": "protected-boundary",
+    "transparent_background": false,
+    "prompt": "A single cinematic narrative-strategy game action illustration, wide landscape 3:2, companion to a shared grazing council scene. Anatolian river valley around 430 CE. A simple wooden post-and-rope boundary protects a lush strip of young trees and water reeds beside a stream; in foreground a concerned woman goat herder stands OUTSIDE the boundary with several goats, unable to reach the riverside grazing strip. A quiet researcher in a muted practical cloak stands inside looking toward her. The action clearly reads: stricter nature protection keeps a healthy riverbank, but blocks local livelihoods and creates tension. No violence. Rolling dry brown mountains and distant small stone village, credible historical rural tools. Painterly semi-realistic premium strategy-game art with visible textured brushwork, warm amber afternoon light, cool water and ink-slate shadows, beautiful depth. No text, no writing, no logos, no UI, no frame, no infographic arrows, no modern object. One unified scene."
+  }
+]

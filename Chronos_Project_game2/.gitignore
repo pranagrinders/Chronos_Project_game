@@ -1,0 +1,17 @@
+# OpenOffice kilit dosyaları
+.~lock.*
+
+# Node / build
+node_modules/
+dist/
+
+# İşletim sistemi / editör
+Thumbs.db
+desktop.ini
+.DS_Store
+.vscode/
+
+# Yerel arsiv ve geri bildirim notlari
+*.7z
+geribildirim_gorselleri_texti/
+Yeni_Geribildirim/

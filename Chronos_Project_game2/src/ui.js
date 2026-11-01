@@ -1,0 +1,801 @@
+// ARAYUZ: harita, paneller, sicrama akisi, raporlar, oyun sonu
+(() => {
+  const $ = (s) => document.querySelector(s);
+  const { MAP, REGIONS, ERAS, ROLES, GLOBALS, REGION_VIEW, BUDGETS, PROJECTS, CARDS, QUOTES, REAL, ENDINGS, CATA, YEARS } = CP;
+  const REG = Object.fromEntries(REGIONS.map((r) => [r.id, r]));
+  const BCOL = { mil: '#e5534b', ind: '#8a97a0', agri: '#c8953c', env: '#49c97b', edu: '#4b8fe0' };
+  let G, viewYear = 2070, sel = null, replaying = false, guidedStart = true, seenIntro = false, compareTl = null, muted = false, lastKeys = new Set(), tourSeen = false;
+  let savedRun = { status: 'none' }, saveNotice = '';
+
+  const qs = new URLSearchParams(location.search);
+  const FAST = qs.has('fast');
+  const CINEMA = CP.cinema && !qs.has('classic');
+  document.body.classList.toggle('storyMode', !!CINEMA);
+  if (CINEMA) $('#right').append($('#legacyDrawer'));
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  const hist = (y) => { const h = G.tl.history; return h.find((s) => s.y === y) || h[h.length - 1]; };
+  const score = (r) => (r.bio + r.water + r.soil + r.food + r.awareness * 0.5) / 4.5 - r.unrest * 0.25 - (r.war > 0 ? 18 : 0);
+
+  function colorOf(v) {
+    // kirmizi -> sari -> yesil
+    const t = CP.clamp((v - 8) / 50, 0, 1);
+    if (CINEMA) return `rgb(${[41 + 31*t, 57 + 35*t, 58 + 13*t].map(Math.round).join(',')})`;
+    const c = t < 0.5
+      ? [205 + 20 * t * 2, 50 + 110 * t * 2, 40]
+      : [225 - 160 * (t - 0.5) * 2, 160 + 25 * (t - 0.5) * 2, 40 + 40 * (t - 0.5) * 2];
+    return `rgb(${c.map(Math.round).join(',')})`;
+  }
+
+  // ---- Ses: dosya gerektirmez, tarayici sentezler ----
+  let audio = null;
+  function tone(freq, dur = 0.12, type = 'sine', vol = 0.05, slide = 0) {
+    if (muted) return;
+    try {
+      audio = audio || new (window.AudioContext || window.webkitAudioContext)();
+      const o = audio.createOscillator(), g = audio.createGain(), t = audio.currentTime;
+      o.type = type; o.frequency.setValueAtTime(freq, t);
+      if (slide) o.frequency.exponentialRampToValueAtTime(Math.max(20, freq + slide), t + dur);
+      g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      o.connect(g); g.connect(audio.destination); o.start(t); o.stop(t + dur);
+    } catch (e) { /* ses zorunlu degil */ }
+  }
+  const uiSound = name => { if (muted) return; CP.sceneAudio.play('bridge'); CP.sceneAudio.cue(name); };
+  const sfx = {
+    click: () => CINEMA ? uiSound('select') : tone(520, 0.05, 'triangle', 0.03),
+    jump: () => CINEMA ? uiSound('travel') : tone(90, 1.3, 'sawtooth', 0.05, 900),
+    good: () => { if (CINEMA) return uiSound('positive'); tone(523, 0.14); setTimeout(() => tone(784, 0.2), 110); },
+    bad: () => { if (CINEMA) return uiSound('caution'); tone(196, 0.3, 'square', 0.03); setTimeout(() => tone(147, 0.4, 'square', 0.03), 160); },
+    mile: () => { if (CINEMA) return uiSound('positive'); [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => tone(f, 0.18), i * 90)); },
+  };
+  document.addEventListener('click', (e) => { if (!e.composedPath().some((node) => node.id === 'cinema') && e.target.closest('button')) sfx.click(); });
+  let lastHover = -Infinity;
+  const navigationCue = e => {
+    if (!CINEMA || muted || !CP.sceneAudio.initialized || document.hidden) return;
+    const control = e.target.closest?.('button:not(:disabled),.region');
+    if (!control || control.contains(e.relatedTarget) || performance.now() - lastHover < 90) return;
+    lastHover = performance.now(); CP.sceneAudio.cue('hover');
+  };
+  document.addEventListener('pointerover', navigationCue);
+  document.addEventListener('focusin', navigationCue);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden && CINEMA && !muted && !CP.cinema.active && CP.sceneAudio.initialized) CP.sceneAudio.play('bridge'); });
+  document.addEventListener('chronos-sound', (e) => {
+    muted = e.detail.muted;
+    $('#btnMute').textContent = muted ? 'Ses: Kapalı' : 'Ses: Açık';
+  });
+
+  // ---- Veri sisi: arastirmaci yoksa aralik gosterilir ----
+  const known = (id, y) => G.ivs.some((i) => i.kind === 'drop' && i.role === 'res' && i.year <= y && i.region === id);
+  function fuzzy(id, key, v, y) {
+    if (known(id, y)) return Math.round(v) + '';
+    const n = 7 + CP.hash01(G.seed, id, key) * 9;
+    const c = v + (CP.hash01(G.seed, 'o', id, key) - 0.5) * n;
+    return `~${Math.max(0, Math.round(c - n))}-${Math.min(100, Math.round(c + n))}`;
+  }
+
+  // ---- Harita ----
+  function buildMap() {
+    const svg = $('#map');
+    svg.setAttribute('viewBox', `0 0 ${MAP.W} ${MAP.H}`);
+    svg.innerHTML = REGIONS.map((r) => `<path class="region" id="r_${r.id}" d="${MAP.paths[r.id]}"><title>${r.name}</title></path>`).join('')
+      + `<defs><pattern id="stripe" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="2.6" height="7" fill="#7ff0ff"/></pattern></defs>`
+      + REGIONS.map((r) => `<path class="curLayer" id="c_${r.id}" d="${MAP.paths[r.id]}"></path>`).join('')
+      + REGIONS.map((r) => `<text class="regLabel" id="l_${r.id}" x="${MAP.center[r.id][0]}" y="${MAP.center[r.id][1]}"></text>`).join('')
+      + REGIONS.map((r) => `<text class="deltaLabel" id="dl_${r.id}" x="${MAP.center[r.id][0]}" y="${MAP.center[r.id][1] - 13}"></text>`).join('')
+      + '<g id="pins"></g>';
+    for (const r of REGIONS) {
+      const el = $(`#r_${r.id}`);
+      el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button'); el.setAttribute('aria-label', r.name);
+      el.onclick = () => openRegion(r.id);
+      el.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openRegion(r.id); } };
+    }
+  }
+  function paintMap(y = viewYear) {
+    const s = hist(y);
+    for (const r of REGIONS) {
+      const st = s.regions[r.id];
+      $(`#r_${r.id}`).style.fill = colorOf(score(st));
+      $(`#l_${r.id}`).textContent = CP.regionName(r.id, y);
+      $(`#c_${r.id}`).style.opacity = (st.cur || 0) * 0.55;
+      const lab = $(`#dl_${r.id}`);
+      const o = compareTl && (compareTl.history.find((h) => h.y === y) || compareTl.final).regions[r.id];
+      const d = o ? score(st) - score(o) : 0;
+      lab.textContent = Math.abs(d) >= 1 ? (d > 0 ? '+' : '') + Math.round(d) : '';
+      lab.setAttribute('class', 'deltaLabel ' + (d > 0 ? 'pos' : 'neg'));
+    }
+    const crisis = y === 2070 ? [...REGIONS].sort((a, b) => score(s.regions[a.id]) - score(s.regions[b.id])).slice(0, 3).map((r) => r.id) : [];
+    for (const r of REGIONS) $(`#r_${r.id}`).classList.toggle('crisis', crisis.includes(r.id) && !replaying);
+    $('#pins').innerHTML = REGIONS.filter((r) => s.regions[r.id].war > 0).map((r) => {
+      const [x, y2] = MAP.center[r.id];
+      return `<circle class="pin" cx="${x}" cy="${y2 + 9}" r="6" fill="none" stroke="#ff5b52" stroke-width="2"><animate attributeName="r" values="4;11;4" dur="1.6s" repeatCount="indefinite"/></circle>`;
+    }).join('') + G.ivs.filter((i) => i.kind === 'drop' && i.year <= y).map((i, n) => {
+      const [x, y2] = MAP.center[i.region];
+      const c = { sci: '#4fd1d9', res: '#e6b23c', edu: '#7fe39f' }[i.role];
+      return `<rect class="pin" x="${x - 18 + n * 3 % 30}" y="${y2 + 3}" width="5" height="5" fill="${c}" stroke="#000"/>`;
+    }).join('');
+    $('#yearLabel').textContent = y < 1000 ? 'M.S. ' + y : y;
+    const wars = s.global.wars;
+    $('#mapLegend').innerHTML = `${wars ? `<span class="dn">Aktif savaş bölgesi: ${wars}</span> · ` : ''}Karbon ${Math.round(s.global.ppm)} ppm · +${s.global.heat.toFixed(1)}°C · <span style="color:#ff9d6e">Parlayan kenar: en kritik 3 bölge</span>${REGIONS.some((r) => s.regions[r.id].cur > 0.05) ? ' · <span style="color:#7ff0ff">Çizgili: akım yayılıyor</span>' : ''}`;
+  }
+
+  function ticker(y = viewYear) {
+    const pool = G.tl.log.filter((e) => e.y <= y && (e.kind === 'major' || e.kind === 'echo' || e.kind === 'legacy' || e.good));
+    const fresh = pool.filter((e) => !lastKeys.has(e.y + e.text));
+    const items = [...fresh.slice(-3).reverse(), ...pool.filter((e) => lastKeys.has(e.y + e.text)).slice(-3).reverse()].slice(0, 3);
+    $('#ticker').innerHTML = items.map((e) => `<div class="${e.good ? 'good' : e.war || e.bad ? 'bad' : ''}"><i>${e.y}</i>${lastKeys.size && !lastKeys.has(e.y + e.text) ? '<b class="new">YENİ</b> ' : ''}${e.text}</div>`).join('') || '<div>Henüz kayda değer bir gelişme yok.</div>';
+  }
+
+  // ---- Paneller ----
+  function bar(pct, color) { return `<div class="bar"><i style="width:${CP.clamp(pct)}%;background:${color}"></i></div>`; }
+  const badColor = (good) => (good > 60 ? 'var(--grn)' : good > 35 ? 'var(--amb)' : 'var(--red)');
+
+  function renderPool() {
+    const s = hist(viewYear), base = G.base.history.find((h) => h.y === s.y) || G.base.final;
+    const norm = (it, g) => {
+      const v = g[it.key];
+      const p = it.min != null ? ((v - it.min) / (it.max - it.min)) * 100 : v;
+      return CP.clamp(p);
+    };
+    const open = [...document.querySelectorAll('#pool details')].map((d) => d.open);
+    $('#pool').innerHTML = `<div class="ptitle"><b>KÜRESEL VERİ HAVUZU</b><span>15 parametre</span></div>` + GLOBALS.map((grp, gi) => {
+      const health = grp.items.reduce((a, it) => a + (it.bad ? 100 - norm(it, s.global) : norm(it, s.global)), 0) / grp.items.length;
+      return `<details class="pgroup" ${(open[gi] ?? false) ? 'open' : ''}><summary>${grp.title}${bar(health, badColor(health))}</summary>` + grp.items.map((it) => {
+        const v = s.global[it.key], p = norm(it, s.global), good = it.bad ? 100 - p : p;
+        const d = v - (base.global ? base.global[it.key] : v);
+        const better = it.bad ? d < 0 : d > 0;
+        const dT = Math.abs(d) >= (it.unit ? 2 : 0.5) ? `<span class="delta ${better ? 'up' : 'dn'}">${d > 0 ? '+' : ''}${Math.round(d)}</span>` : '';
+        return `<div class="prow"><span>${it.name}</span>${bar(p, badColor(good))}<span class="val">${Math.round(v)}${it.unit || ''} ${dT}</span></div>`;
+      }).join('') + '</details>';
+    }).join('') ;
+  }
+
+  function renderCrew() {
+    $('#crew').innerHTML = `<div class="ptitle"><b>ÖZEL TİM</b><span>Gemide</span></div>` + Object.entries(ROLES).map(([k, r]) => {
+      return `<div class="crewRow" title="${r.desc}"><div>${r.name}<small>${G.crew[k] > 0 ? r.onBase.replace('Üste kaldığında: ', '') : 'Gemide kimse yok, fayda yok.'}</small></div><span><span class="badge">${G.crew[k]}</span>${G.vets[k] ? ` <span class="badge vet">${G.vets[k]} usta</span>` : ''}</span></div>`;
+    }).join('');
+  }
+  function renderCore() {
+    const s = G.tl.final.global;
+    const e = G.energy;
+    $('#core').innerHTML = `<div class="ptitle"><b>ÇEKİRDEK ENERJİSİ</b><span>Sıçrama ${G.jumps}</span></div><span class="big">%${Math.round(e)}</span>${bar(e, e > 40 ? 'var(--cy)' : e > 18 ? 'var(--amb)' : 'var(--red)')}`
+      + `<div style="margin-top:4px;color:var(--dim);font-size:11.5px">Sıçrama başına ikmal: +${(1 + s.renew * 0.05).toFixed(1)} (2070 temiz enerjisine bağlı)</div>`;
+  }
+  function renderDrops() {
+    const arr = G.ivs.filter((i) => i.kind === 'drop');
+    $('#legacyCount').textContent = arr.length;
+    $('#drops').innerHTML = `<div class="ptitle"><b>GEÇMİŞTEKİ VAKIFLAR</b><span>${arr.length}</span></div>` + (arr.map((i) => {
+      const dead = G.tl.log.find((e) => e.kind === 'legacy' && e.iv === i.id);
+      const can = !i.extractedAt && !dead && G.energy >= CP.eraCost(G, i.year);
+      return `<div class="dropRow ${dead ? 'dead' : i.extractedAt ? 'off' : ''}"><button data-x="${i.id}" ${can ? '' : 'disabled'} title="Üyeyi usta olarak geri al. Bedel: ${CP.eraCost(G, i.year)} enerji. Vakfın gücü %40 azalır.">Geri al</button>${CP.missionById(i.mission).name}<small>${ROLES[i.role].name} · ${i.year} · ${REG[i.region].name}${dead ? ` · ${dead.y}'de dağıldı` : i.extractedAt ? ' · üye döndü' : ''}</small></div>`;
+    }).join('') || '<div style="color:var(--dim);font-size:12px">Henüz kimse bırakılmadı.</div>');
+    document.querySelectorAll('[data-x]').forEach((b) => { b.onclick = () => doExtract(b.dataset.x); });
+  }
+  function renderProto() {
+    const p = CP.proto(G), t = CP.tracks(G);
+    $('#proto').innerHTML = `<div class="ptitle"><b>İKİNCİ PROTOTİP</b><span>Üçü de %100 olmalı</span></div><span class="big" id="protoVal">%${Math.round(p)}</span>`
+      + Object.entries(CP.TRACKS).map(([k, n]) => `<div class="prow trackRow"><span>${n}</span>${bar(t[k], t[k] >= 100 ? 'var(--grn)' : 'var(--amb)')}<span class="val">%${Math.round(t[k])}</span></div>`).join('')
+      + (G.tl.catastrophe ? `<div class="warn">${CATA[G.tl.catastrophe.type]} (${G.tl.catastrophe.y}). <b>Son Seans:</b> Bir sıçramayla bunu önlemezsen oyun biter.</div>` : '');
+  }
+  function renderHand() {
+    $('#cardCount').textContent = G.hand.length + '/4';
+    $('#hand').innerHTML = `<div class="ptitle"><b>KARAR KARTLARI</b><span>${G.hand.length}/4</span></div><div class="cards">` + (G.hand.map((id, i) => {
+      const c = CARDS.find((x) => x.id === id);
+      return `<button class="card ${c.color}" data-c="${i}"><b>${c.name}</b>${c.desc}</button>`;
+    }).join('') || '<span style="color:var(--dim);font-size:12px">Sıçrama sonrası kart seçersin.</span>') + '</div>';
+    document.querySelectorAll('[data-c]').forEach((b) => { b.onclick = () => useCard(+b.dataset.c); });
+  }
+  function renderTimeline() {
+    const span = YEARS.end - YEARS.start;
+    // Tarih olcegi: gozle gorulebilir olsun diye esit aralikli duraklar
+    const stops = [...ERAS.map((e) => e.year), 2070];
+    const pos = (y) => {
+      for (let i = 0; i < stops.length - 1; i++) if (y <= stops[i + 1]) return ((i + (y - stops[i]) / (stops[i + 1] - stops[i])) / (stops.length - 1)) * 100;
+      return 100;
+    };
+    $('#tlBar').innerHTML = `<div class="ln"></div><div class="now" style="width:${pos(viewYear)}%"></div>`
+      + G.ivs.filter((i) => i.kind === 'drop').map((i) => `<i class="dropDot" style="left:${pos(i.year)}%;background:${{ sci: '#4fd1d9', res: '#e6b23c', edu: '#7fe39f' }[i.role]}"></i>`).join('')
+      + stops.map((y) => `<button class="tick ${y === viewYear ? 'on' : ''}" data-y="${y}" style="left:${pos(y)}%"><b></b><small>${y === 430 ? 'M.S. 430' : y}</small></button>`).join('');
+    document.querySelectorAll('[data-y]').forEach((b) => { b.disabled = replaying; b.onclick = () => { if (replaying || G.over) return; viewYear = +b.dataset.y; renderAll(); }; });
+    void span;
+  }
+
+  function guide() {
+    const g = $('#guide');
+    if (replaying) return;
+    if (G.tl.catastrophe) { g.innerHTML = '<b class="dn">Bu tarih kıyametle bitiyor.</b> Tarih Kitabı\'ndan felaketi seç ya da son bir sıçrama yap.'; return; }
+    if (!CP.canAct(G)) {
+      g.innerHTML = CP.extractable(G).length
+        ? '<b class="dn">Gemide kimse kalmadı.</b> Sol panelden bir üyeyi <b>Geri al</b>, ya da kart oyna.'
+        : '<b class="dn">Tim tükendi.</b>';
+      return;
+    }
+    if (guidedStart && G.jumps === 0) g.innerHTML = '<b>İlk görev:</b> Anadolu’da suyun izini değiştir. Hazır olduğunda ilk göreve başla.';
+    else if (G.jumps === 0) g.innerHTML = '<b>Bir bölge seç.</b> Sorunu gör, geçmişe bir görev planla.';
+    else if (G.jumps === 1) { const focus = CP.nextFocus ? CP.nextFocus(G) : null; g.innerHTML = focus ? `<b>${focus.label}.</b> ${focus.message}` : '<b>2. adım:</b> Üç kol da dolmalı: Teknoloji, Ekosistem, Barış. Hangisi geride, ona bak.'; }
+    else if (G.jumps === 2) g.innerHTML = '<b>İpucu:</b> <b>Tarih Kitabı</b>\'ndaki felaketleri seçip önlemeye gidebilirsin.';
+    else if (G.jumps === 3) g.innerHTML = '<b>İpucu:</b> Akımlar kendi kendine yayılır. Kültürü yüksek bölgelerden başlatmak daha hızlıdır.';
+    else g.innerHTML = 'Hedef: <b>Üç kolu da %100\'e çıkar.</b> Enerjin ve timin bitmeden yetiştir.';
+  }
+
+  function renderAll() {
+    CP.hud?.render(G); CP.hud?.setVisible(seenIntro || qs.has('skip') || G.jumps > 0);
+    if (CINEMA) { renderDispatch(sel || 'ana'); if (!CP.cinema.active && CP.sceneAudio.initialized && !muted && !document.hidden) CP.sceneAudio.play('bridge'); }
+    paintMap(); ticker(); renderPool(); renderCrew(); renderCore(); renderDrops(); renderProto(); renderHand(); renderTimeline(); guide(); paintWindow();
+    $('#btnJump').disabled = replaying || !!G.over || !CP.canAct(G) || G.energy < CP.minCost();
+    $('#btnJump').textContent = guidedStart && G.jumps === 0 ? 'İLK GÖREVE BAŞLA' : CP.canAct(G) ? 'SIÇRAMA HAZIRLIĞI' : 'GEMİDE KİMSE YOK';
+    $(`#r_ana`).classList.toggle('tutorialTarget', guidedStart && G.jumps === 0);
+    $('#btnBook').disabled = replaying;
+    $('#btnEnd').disabled = replaying;
+    $('#btnBridge').hidden = !CINEMA; $('#btnBridge').disabled = replaying || !!G.over;
+    $('#btnSave').disabled = replaying || !!G.over;
+    $('#saveStatus').textContent = saveNotice;
+    $('#legacyDrawer').open = !CP.canAct(G) && CP.extractable(G).length > 0 ? true : $('#legacyDrawer').open;
+  }
+
+  // ---- Modal ----
+  let returnFocus = null;
+  const modal = (html) => {
+    if ($('#modal').classList.contains('hidden')) returnFocus = document.activeElement;
+    const box = $('#modalBox');
+    box.innerHTML = html; $('#modal').classList.remove('hidden'); box.scrollTop = 0;
+    CP.hud?.refresh(); CP.hud?.attach($('#modal')); CP.story?.bindVoices(box);
+    if (CINEMA && CP.sceneAudio.initialized && !muted) { CP.sceneAudio.play('bridge'); CP.sceneAudio.cue('open'); }
+    const title = box.querySelector('h2');
+    if (title) { title.id = 'dialogTitle'; box.setAttribute('aria-labelledby', title.id); $('#modal').setAttribute('aria-labelledby', title.id); }
+    else { box.removeAttribute('aria-labelledby'); $('#modal').removeAttribute('aria-labelledby'); }
+    box.focus();
+  };
+  const closeModal = () => {
+    CP.story?.stopVoice();
+    if (CINEMA && !$('#modal').classList.contains('hidden')) CP.sceneAudio.cue('back');
+    $('#modal').classList.add('hidden');
+    CP.hud?.attach();
+    if (returnFocus?.isConnected) returnFocus.focus();
+  };
+  document.addEventListener('keydown', (e) => {
+    if ($('#modal').classList.contains('hidden')) return;
+    if (e.key === 'Escape') {
+      const back = $('#mClose') || $('#mCancel');
+      if (back) { e.preventDefault(); back.click(); }
+    }
+    if (e.key !== 'Tab') return;
+    const nodes = [...$('#modalBox').querySelectorAll('button:not(:disabled), summary, [tabindex="0"]')];
+    if (!nodes.length) { e.preventDefault(); return; }
+    const first = nodes[0], last = nodes[nodes.length - 1];
+    if (e.shiftKey && (document.activeElement === first || document.activeElement === $('#modalBox'))) { e.preventDefault(); last.focus(); }
+    else if (!e.shiftKey && (document.activeElement === last || document.activeElement === $('#modalBox'))) { e.preventDefault(); first.focus(); }
+  });
+
+  // ---- Bolge paneli ----
+  function renderDispatch(id) {
+    const box = $('#dispatch'); if (!box || !CP.story) return;
+    const call = CP.story.regionCall(G, id), esc = CP.story.esc;
+    box.hidden = false;
+    box.innerHTML = `<p class="dispatchEyebrow">2070 KAYITLARI · ${esc(REG[id].name)}</p><h2>${esc(call.title)}</h2>${CP.story.dialogue(call.speaker, call.line)}<p class="dispatchFocus">Bakacağımız mesele: <b>${esc(call.focus)}</b></p>
+      <button class="primary" id="dPlan" ${G.over || !CP.canAct(G) || G.energy < CP.minCost() ? 'disabled' : ''}>Bu bölge için görev seç →</button><button class="ghost" id="dInspect">Bölge raporunu aç</button>`;
+    CP.story.bindVoices(box);
+    $('#dPlan').onclick = () => openEra(id); $('#dInspect').onclick = () => openRegionDetails(id);
+  }
+  function openRegion(id) {
+    if (!CINEMA) return openRegionDetails(id);
+    if (replaying || G.over) return;
+    if (guidedStart && G.jumps === 0) return firstBriefing();
+    sel = id;
+    document.querySelectorAll('.region').forEach(p => p.classList.toggle('sel', p.id === 'r_' + id));
+    renderDispatch(id); $('#dPlan').focus(); CP.sceneAudio.play('bridge'); CP.sceneAudio.cue('open');
+    if (matchMedia('(max-width: 900px)').matches) $('#dispatch').scrollIntoView?.({ behavior: reducedMotion ? 'auto' : 'smooth', block: 'start' });
+  }
+  function openRegionDetails(id) {
+    if (replaying || G.over) return;
+    if (guidedStart && G.jumps === 0) return firstBriefing();
+    sel = id;
+    document.querySelectorAll('.region').forEach((p) => p.classList.toggle('sel', p.id === 'r_' + id));
+    const y = viewYear, st = hist(y).regions[id], def = REG[id];
+    const k = known(id, y);
+    const rows = REGION_VIEW.map((grp) => `<h3>${grp.title}</h3>` + grp.items.map((it) => {
+      const v = st[it.key];
+      const col = it.neutral ? 'var(--cy)' : badColor(it.bad ? 100 - v : v);
+      return `<div class="prow"><span>${it.name}</span>${bar(v, col)}<span class="val">${fuzzy(id, it.key, v, y)}</span></div>`;
+    }).join('')).join('');
+    const pf = 0.05 + 0.95 / (1 + Math.exp(-(y - 1975) / 32));
+    const organic = def.pop * pf * st.waste * 62, plastic = def.pop * pf * st.consumption * (1 - st.waste / 110) * 9;
+    const proj = PROJECTS.map((p) => {
+      const pct = Math.min(100, (st[p.key] / p.at) * 100);
+      return `<div class="proj"><span>${p.name}</span><span class="${pct >= 100 ? 'up' : ''}">${pct >= 100 ? 'Tamam' : '%' + Math.round(pct)}</span></div>`;
+    }).join('');
+    const drops = G.ivs.filter((i) => i.kind === 'drop' && i.region === id);
+    modal(`<h2>${CP.regionName(id, y)} <small style="font-size:13px;color:var(--dim)">${y} · ${def.arch}</small></h2>
+      ${k ? '<p class="up" style="margin:0">Saha araştırmacısı var: veriler kesin.</p>' : '<p style="margin:0;color:var(--amb)">Araştırmacı yok: değerler tahmini aralıktır.</p>'}
+      <div class="cols"><div>${rows}</div><div>
+      <h3>Yatırım Dağılımı</h3><div class="budget">${Object.keys(BUDGETS).map((b) => `<i style="width:${st.budget[b]}%;background:${BCOL[b]}"></i>`).join('')}</div>
+      <div class="legend">${Object.keys(BUDGETS).map((b) => `<span><b style="background:${BCOL[b]}"></b>${BUDGETS[b]} ${k ? '%' + Math.round(st.budget[b]) : ''}</span>`).join('')}</div>
+      ${st.war > 0 ? '<div class="warn">Bu bölge bir savaş koalisyonunun parçası.</div>' : ''}
+      <h3>Günlük Rakamlar (tahmini)</h3>
+      <div class="stat"><span>Geri dönüştürülen organik atık</span><b>${Math.round(organic).toLocaleString('tr-TR')} ton/gün</b></div>
+      <div class="stat"><span>Doğaya karışan plastik</span><b class="dn">${Math.round(plastic).toLocaleString('tr-TR')} ton/gün</b></div>
+      <h3>Çevre Projeleri</h3>${proj}
+      <h3>Buradaki Görevler</h3>${drops.map((i) => `<div>${i.year}: ${CP.missionById(i.mission).name}</div>`).join('') || '<div style="color:var(--dim)">Yok</div>'}
+      </div></div>
+      <div class="mfoot"><button id="mClose">Kapat</button><button class="primary" id="mPlan" ${!CP.canAct(G) || G.energy < CP.minCost() ? 'disabled' : ''}>Buraya Sıçrama Planla</button></div>`);
+    $('#mClose').onclick = closeModal;
+    $('#mPlan').onclick = () => openEra(id);
+  }
+
+  // ---- Sicrama akisi: her ekranda tek soru ----
+  let plan;
+  const yr = (y) => (y < 1000 ? 'M.S. ' + y : y);
+  const stepHead = (n, t) => `<div class="stepBar">${[1, 2, 3, 4].map((i) => `<i class="${i <= n ? 'on' : ''}"></i>`).join('')}</div><h2>${t}</h2>`;
+
+  function openPlanner() {
+    if (replaying || G.over) return;
+    if (guidedStart && G.jumps === 0) return firstBriefing();
+    if (sel) return openEra(sel);
+    const crisis = [...REGIONS].sort((a, b) => score(G.tl.final.regions[a.id]) - score(G.tl.final.regions[b.id])).slice(0, 3).map((r) => r.id);
+    modal(`${stepHead(1, 'Hangi bölge?')}<div class="optGrid regionChoices">${REGIONS.map((r) => `<button class="opt ${crisis.includes(r.id) ? 'crit' : ''}" data-reg="${r.id}"><b>${r.name}</b>${r.arch}${crisis.includes(r.id) ? ' · <span class="dn">KRİTİK</span>' : ''}</button>`).join('')}</div>
+      <div class="mfoot"><button id="mClose">Vazgeç</button></div>`);
+    document.querySelectorAll('[data-reg]').forEach((b) => { b.onclick = () => openEra(b.dataset.reg); });
+    $('#mClose').onclick = closeModal;
+  }
+  function openEra(region) {
+    if (replaying || G.over) return;
+    sel = region;
+    document.querySelectorAll('.region').forEach((p) => p.classList.toggle('sel', p.id === 'r_' + region));
+    modal(`${stepHead(2, `${REG[region].name}: Hangi çağa?`)}<div class="optGrid eraGrid">${ERAS.map((e) => `<button class="opt" data-era="${e.year}" ${G.energy >= e.cost ? '' : 'disabled'}><b>${yr(e.year)}</b><span class="costTag">${e.cost} enerji</span><br>${e.name}. ${e.desc}</button>`).join('')}</div>
+      <div class="mfoot"><button id="mBack">Başka bölge</button><span style="color:var(--dim)">Çekirdek Enerjisi: %${Math.round(G.energy)}</span></div>`);
+    document.querySelectorAll('[data-era]').forEach((b) => { b.onclick = () => openMissions(region, +b.dataset.era); });
+    $('#mBack').onclick = () => { sel = null; openPlanner(); };
+  }
+  function missionCard(o, i, region) {
+    const intel = G.crew.res > 0 ? CP.intel({ ...o, region }) : null;
+    const name = o.current ? `Akım: ${o.current.name}` : o.event ? `Olayı Değiştir` : o.m.name;
+    const desc = o.current ? `${o.current.desc} ${o.m.desc}` : o.event ? `<span class="dn">${o.event.y}: ${o.event.text}</span><br>${o.m.desc}` : CP.fill(o.m.desc, region, o.year);
+    const request = CP.story?.request(o), person = request && CP.story.cast[request.speaker];
+    return `<button class="opt mission" data-m="${i}">${CINEMA && person ? `<span class="missionRequester"><img src="assets/cinema/${person.image}" alt="${person.name}"><span><strong>${person.name}</strong><small>${person.role}</small></span></span><span class="missionQuote">${CP.story.esc(CP.fill(request.line, region, o.year))}</span>` : ''}<span class="roleTag ${o.role}">${ROLES[o.role].name}</span><b>${name}</b><span class="missionDesc">${desc}</span>
+      <span class="missionWhy"><strong>Neden bu görev?</strong>${CP.missionReason(G, o, region)}</span>
+      ${intel ? `<div class="intel">Rapor: ${intel.list.join(' · ')}<br>Dağılma riski: ${intel.risk}</div>` : '<div class="intel">Gemide araştırmacı yok: Rapor alınamıyor.</div>'}</button>`;
+  }
+  function openMissions(region, year) {
+    if (replaying || G.over) return;
+    const offers = CP.offerMissions(G, region, year);
+    modal(`${stepHead(3, `${yr(year)}, ${CP.regionName(region, year)}: Görevin ne?`)}<div class="optGrid missionGrid">${offers.map((o, i) => missionCard(o, i, region)).join('')}</div>
+      <div class="mfoot"><button id="mBack">Başka çağ</button><span style="color:var(--dim)">Her sıçramada farklı görevler çıkar</span></div>`);
+    document.querySelectorAll('[data-m]').forEach((b) => { b.onclick = () => startMission({ ...offers[+b.dataset.m], region }); });
+    $('#mBack').onclick = () => openEra(region);
+  }
+  // Kitaptan dogrudan: felaketi onle
+  function preventEvent(ev) {
+    startMission({ m: CP.BLOCK_MISSION, role: CP.roleFor(G, CP.BLOCK_MISSION), event: ev, year: Math.max(430, ev.y - 10), region: ev.r });
+  }
+  function startMission(p) {
+    if (replaying || G.over) return;
+    plan = { ...p, choices: [], logs: [], vet: G.vets[p.role] > 0 };
+    plan.stages = CP.stages(G, plan);
+    if (!(CINEMA && plan.tutorial)) sfx.jump();
+    renderStage(0);
+  }
+  function optTags(o, context) {
+    const t = [];
+    const preview = context && CP.choicePreview ? CP.choicePreview(context, o) : null;
+    if ((o.mult || 1) > 1) t.push('<i class="tg up">Güç +</i>');
+    if ((o.mult || 1) < 1) t.push('<i class="tg dn">Güç -</i>');
+    if ((o.hz || 0) < 0 && (!preview || preview.reduced)) t.push('<i class="tg up">Kalıcılık +</i>');
+    if ((o.hz || 0) > 0 && (!preview || preview.increased)) t.push('<i class="tg dn">Risk +</i>');
+    if (o.hz && preview && !preview.reduced && !preview.increased) t.push('<i class="tg">Bu döngüde ek kalıcılık farkı yok</i>');
+    if (o.grow) t.push('<i class="tg up">Zamanla büyür</i>');
+    if (o.spread) t.push('<i class="tg up">Komşulara yayılır</i>');
+    if (o.fx?.unrest > 0) t.push('<i class="tg dn">İsyan +</i>');
+    if (o.fx?.unrest < 0) t.push('<i class="tg up">İsyan -</i>');
+    return t.join('');
+  }
+  function renderStage(i) {
+    const st = plan.stages[i];
+    const decide = (o) => {
+      plan.choices.push(o);
+      plan.logs.push(CP.fill(o.log, plan.region, plan.year));
+      if (i < 2) renderStage(i + 1); else runJump();
+    };
+    if (CINEMA) return CP.cinema.stage(G, plan, i, decide, () => { CP.cinema.close(); if (plan.tutorial) firstBriefing(); else openMissions(plan.region, plan.year); });
+    const img = plan.year === 430 ? '<img class="fieldImg" src="assets/era430.jpg" alt="M.S. 430 saha operasyonu">' : '';
+    const labels = ['Geliş', 'Kriz', 'Ayrılık'];
+    modal(`${stepHead(4, `${yr(plan.year)} · ${CP.regionName(plan.region, plan.year)}`)}${i === 0 ? img : ''}
+      ${plan.tutorial ? '<p class="eyebrow">İLK GÖREV · SUYUN İZİ</p>' : ''}
+      <p style="margin:0;color:var(--dim)">${i === 0 ? `Temporal Shift iniş yaptı. ${ROLES[plan.role].name} görevde: ${plan.m.name}.` : `Görev sürüyor: ${plan.m.name}.`} <b style="color:var(--cy)">Karar ${i + 1}/3: ${labels[i]}</b></p>
+      <h3>${st.title}</h3><p class="lead">${st.text}</p>
+      <div class="optGrid">${st.opts.map((o, k) => `<button class="opt" data-f="${k}"><b>${o.t}</b>${optTags(o, plan)}</button>`).join('')}</div>
+      <div class="mfoot"><button id="mCancel">Hazırlığa dön</button><span class="muted">${i < 2 ? 'Seçimlerini tamamlayana kadar enerji harcanmaz.' : `${CP.eraCost(G, plan.year)} enerji · Son seçimden sonra tarih yeniden hesaplanır.`}</span></div>`);
+    $('#mCancel').onclick = () => plan.tutorial ? firstBriefing() : openMissions(plan.region, plan.year);
+    document.querySelectorAll('[data-f]').forEach((b) => {
+      b.onclick = () => {
+        const o = st.opts[+b.dataset.f];
+        decide(o);
+      };
+    });
+  }
+
+  // ---- Tarih yeniden akiyor ----
+  function runJump() {
+    CP.cinema?.close();
+    closeModal();
+    lastKeys = new Set(G.tl.log.map((e) => e.y + e.text));
+    const rep = CP.jump(G, plan);
+    rep.tutorial = !!plan.tutorial;
+    guidedStart = false;
+    rep.logs = plan.logs; rep.mName = plan.current ? plan.current.name : plan.m.name;
+    replay(rep, () => showReport(rep));
+  }
+  function doExtract(id) {
+    if (replaying || G.over) return;
+    lastKeys = new Set(G.tl.log.map((e) => e.y + e.text));
+    const rep = CP.extract(G, id);
+    if (rep) { rep.extracted = true; replay(rep, () => showReport(rep)); }
+  }
+  function replay(rep, done) {
+    CP.hud?.render(G);
+    if (CINEMA && rep.tutorial) {
+      replaying = true;
+      $('#btnJump').disabled = true; $('#btnBook').disabled = true; $('#btnEnd').disabled = true;
+      return CP.cinema.replay(G, rep, () => { replaying = false; viewYear = 2070; renderAll(); done(); });
+    }
+    replaying = true;
+    compareTl = rep.before;
+    renderCrew(); renderCore(); renderDrops(); renderHand();
+    const steps = G.tl.history;
+    const start = Math.max(0, steps.findIndex((s) => s.y >= (rep.iv?.year || 1970)));
+    $('#guide').innerHTML = '<b>Tarih yeniden yazılıyor...</b> Kelebeğin kanat çırpışını izle.';
+    $('#btnJump').disabled = true; $('#btnBook').disabled = true; $('#btnEnd').disabled = true;
+    document.querySelectorAll('[data-c], [data-x], [data-y]').forEach((b) => { b.disabled = true; });
+    const dur = FAST || reducedMotion ? 50 : 6000;
+    const t0 = performance.now();
+    const seq = steps.slice(start);
+    const tick = (now) => {
+      const i = Math.max(0, Math.min(seq.length - 1, Math.floor(((now - t0) / dur) * seq.length)));
+      viewYear = seq[i].y;
+      paintMap(viewYear); ticker(viewYear); paintWindow(seq[i].global); renderTimeline();
+      if (i < seq.length - 1) requestAnimationFrame(tick);
+      else { replaying = false; viewYear = 2070; compareTl = rep.before; renderAll(); done(); setTimeout(() => { compareTl = null; paintMap(); }, 6000); }
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // ---- Kelebek raporu ----
+  // Ondalik yerine anlasilir buyukluk
+  const mag = (d, invert) => {
+    const a = Math.abs(d);
+    if (a < 0.5) return '<span class="flat">değişmedi</span>';
+    const up = d > 0, good = invert ? !up : up;
+    const size = a < 3 ? 'Küçük' : a < 9 ? 'Orta' : 'Büyük';
+    return `<span class="${good ? 'up' : 'dn'}">${size} ${up ? 'artış' : 'düşüş'}</span>`;
+  };
+  function deltaRow(k, label, invert, d, unit = '') {
+    const x = d.global.find((g) => g.k === k);
+    if (!x) return '';
+    return `<div class="stat"><span>${label}</span><span>${Math.round(x.a)} → ${Math.round(x.b)}${unit} · ${mag(x.d, invert)}</span></div>`;
+  }
+  function localBlock(id, rep) {
+    if (!id) return '';
+    const a = rep.before.final.regions[id], b = rep.after.final.regions?.[id];
+    if (!a || !b) return '';
+    const rows = [['awareness', 'Bilinç'], ['renew', 'Temiz Enerji'], ['waste', 'Sıfır Atık'], ['bio', 'Yaban Hayatı'], ['water', 'Su'], ['soil', 'Toprak'], ['food', 'Gıda'], ['resilience', 'Kent Direnci'], ['unrest', 'İsyan Riski', true], ['military', 'Askeri Bütçe', true], ['consumption', 'Tüketim', true]]
+      .map(([k, n, inv]) => ({ n, inv, a: a[k], b: b[k], d: b[k] - a[k] })).sort((x, y) => Math.abs(y.d) - Math.abs(x.d)).slice(0, 5);
+    return `<h3>${REG[id].name}, ${rep.after.final.y}</h3>` + rows.map((r) => `<div class="stat big2"><span>${r.n}</span><span><b>${Math.round(r.a)} → ${Math.round(r.b)}</b> · ${mag(r.d, r.inv)}</span></div>`).join('');
+  }
+  const evLine = (p) => `<div class="${p.bad ? 'bad' : ''}"><i>${p.y}</i>${p.text}${p.cause ? `<small class="cause">${p.cause}</small>` : ''}</div>`;
+  function resourceBlock(rep) {
+    const r = rep.resources; if (!r) return '';
+    const f = (n) => n.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+    return `<div class="resourceLedger"><h3>Bu Sıçramanın Kaynakları</h3><div class="stat"><span>Çekirdek enerjisi</span><b>${f(r.energyBefore)} → ${f(r.energyAfter)}</b></div><p>−${f(r.spent)} sıçrama · +${f(r.recovered)} ikmal${r.shipResearch ? ` · Gemi araştırması +${f(r.shipResearch)} teknoloji bonusu` : ''}</p></div>`;
+  }
+  function reportBody(rep) {
+    const d = rep.diff, story = CP.reportStory(rep);
+    const { before, after } = CP.reportTracks(G, rep);
+    const trace = story.traces.length ? `<div class="chain">${story.traces.map(evLine).join('')}</div>`
+      : '<p class="muted">Bu müdahaleye bağlı ayrı bir tarihsel yankı kaydedilmedi. Etkisini aşağıdaki ölçümlerde görebilirsin.</p>';
+    return `<div class="reportStory">
+      <section><span class="eyebrow">01 · KARARIN</span><h3>${story.action}</h3>
+        ${story.choices.length ? `<ul class="decisionList">${story.choices.map((t) => `<li>Tim ${t}.</li>`).join('')}</ul>` : ''}</section>
+      <section><span class="eyebrow">02 · TARİHTEKİ İZİ</span>${trace}</section>
+      <section><span class="eyebrow">03 · ${story.afterYear} YILINDA ${story.name.toLocaleUpperCase('tr-TR')}</span>
+        <p class="muted">Önceki tarih → yeni tarih${story.beforeYear !== story.afterYear ? ` · Önceki çizgi ${story.beforeYear}, yeni çizgi ${story.afterYear} yılında sona eriyor; ölçümler farklı yıllara ait.` : ''}</p>
+        ${story.changes.map((r) => `<div class="stat outcome"><span>${r.label}</span><span><b>${Math.round(r.a)} → ${Math.round(r.b)}</b> · ${mag(r.d, r.inverse)}</span></div>`).join('') || '<p>Bu bölgede belirgin bir ölçüm farkı oluşmadı.</p>'}
+      </section></div>
+      <div class="reportProgress"><h3>İkinci Prototip</h3>
+        ${Object.entries(CP.TRACKS).map(([k, n]) => `<div class="stat"><span>${n}</span><span>%${Math.round(before[k])} → %${Math.round(after[k])} · ${mag(after[k] - before[k])}</span></div>`).join('')}
+      </div>
+      ${resourceBlock(rep)}
+      ${d.newMilestones.length ? `<h3>Yeni Eşikler</h3>${d.newMilestones.slice(0, 3).map((m) => `<div class="mile">★ ${REG[m.r].name}: ${m.name}</div>`).join('')}` : ''}
+      <details class="more"><summary>Tüm ölçümleri ve dünya olaylarını incele</summary>
+        <div class="cols"><div>${localBlock(rep.iv?.region || rep.region, rep)}
+        ${deltaRow('ppm', 'Küresel karbon', true, d, ' ppm')}${deltaRow('water', 'Küresel tatlı su', false, d)}${deltaRow('bio', 'Biyoçeşitlilik', false, d)}${deltaRow('renew', 'Temiz enerji', false, d)}${deltaRow('ocean', 'Okyanus yükü', true, d)}${deltaRow('unrest', 'İsyan riski', true, d)}</div>
+        <div><h3>Diğer değişen dünya olayları</h3><p class="muted">Bunlar iki tarih arasındaki farklardır; görevin doğrudan izleri yukarıda gösterilir.</p>
+        <div class="chain">${d.newEvents.filter((e) => e.iv == null && (e.kind === 'major' || e.good)).slice(0, 5).map(evLine).join('') || '<div>Yeni büyük olay kaydedilmedi.</div>'}</div>
+        ${d.avoided.length ? `<h3>Bu tarihte yaşanmayan olaylar</h3>${d.avoided.slice(0, 3).map((e) => `<p>${e.y}: ${e.text}</p>`).join('')}` : ''}</div></div>
+      </details>`;
+  }
+  function showReport(rep, details = false) {
+    if (!(CINEMA && rep.tutorial && !details && !G.over)) {
+      if (rep.diff.newMilestones.length) sfx.mile(); else if (rep.protoAfter > rep.protoBefore + 0.5) sfx.good(); else sfx.bad();
+    }
+    if (G.over) { CP.cinema?.close(); showEnd(rep); return; }
+    if (CINEMA && rep.tutorial && !details) return CP.cinema.result(G, rep,
+      (card) => { CP.takeOffer(G, card); CP.cinema.close(); afterTurn(); },
+      () => { CP.cinema.close(); showReport(rep, true); });
+    const cards = G.offers.map((id) => CARDS.find((c) => c.id === id));
+    modal(`${rep.tutorial ? '<p class="eyebrow">İLK SIÇRAMA TAMAMLANDI</p>' : ''}<h2>Kelebek Raporu</h2>${CINEMA ? CP.story.dialogue(rep.iv?.role === 'sci' ? 'cem' : 'leyla', 'Kararlarının ardından tarih yeniden hesaplandı. Bize ait izleri aşağıda ayırdım; diğer dünya olayları aynı şeyin sonucu olmak zorunda değil.') : ''}${reportBody(rep)}
+      ${rep.tutorial ? '<p class="tutorialNote">İlk izin oluştu. Şimdi üç hedef kolundan hangisinin geride olduğuna bak; sonraki bölgeyi, çağı ve görevi sen seçeceksin.</p>' : ''}
+      ${G.tl.catastrophe ? `<div class="warn"><b>Bu tarih ${G.tl.catastrophe.y} yılında kıyametle bitiyor:</b> ${CATA[G.tl.catastrophe.type]}. Son Seans başladı.</div>` : ''}
+      ${rep.volunteer ? `<p class="up">Bilinçlenen dünyadan yeni bir gönüllü geldi: ${ROLES[rep.volunteer].name}.</p>` : ''}
+      <h3>Sonraki görev için bir kart al ${G.hand.length >= 4 ? '(elin dolu)' : ''}</h3><div class="optGrid">${cards.map((c) => `<button class="card ${c.color}" data-off="${c.id}" ${G.hand.length >= 4 ? 'disabled' : ''}><b>${c.name}</b>${c.desc}</button>`).join('')}</div>
+      <div class="mfoot"><button id="mClose">Kartsız devam</button></div>`);
+    document.querySelectorAll('[data-off]').forEach((b) => { b.onclick = () => { CP.takeOffer(G, b.dataset.off); afterTurn(); }; });
+    $('#mClose').onclick = () => { CP.takeOffer(G, null); afterTurn(); };
+  }
+
+  // İlk görevden sonra komuta ekranını bölge bölge tanıtır.
+  const tourSteps = [
+    { target: '#resourceHud .hudEnergy', title: 'Enerji', text: 'Her sıçrama enerji harcar, görevden sonra biraz geri gelir. Biterse döngü biter.' },
+    { target: '#resourceHud .hudCrew', title: 'Ekibin', text: 'Her göreve bir uzman gider ve o çağda kalır. Bilim, Araştırma ve Eğitim uzmanları farklı görevler yapar.' },
+    { target: '#resourceHud .hudPrototype', title: 'Asıl hedefin', text: 'Teknoloji, Ekosistem ve Barış. Üçü de %100 olunca ikinci makine tamamlanır ve oyunu kazanırsın.' },
+    { target: '#mapWrap', title: 'Dünya haritası', text: 'Renkler bölgelerin durumunu gösterir. Bir bölgeye bas; ekibin oranın sorununu anlatır, görev oradan başlar.' },
+    { target: '#tlBar', title: 'Zaman çizelgesi', text: 'Bir çağa bas, o yılın dünyasını haritada gör. Geçmişi değiştirdikçe bu çizgi de değişir.' },
+    { target: '#cardDrawer', title: 'Karar kartların', text: 'Görev sonunda kazandığın kartlar burada durur. Açıp bir karta basarak oynarsın. En fazla 4 kart taşıyabilirsin.', open: true },
+    { target: '#ops .tabs', title: 'Gemi ve Tarih Kitabı', text: 'Gemi seni komuta güvertesine götürür. Tarih Kitabı, değiştirdiğin her olayı yıl yıl gösterir.' },
+    { target: '#btnJump', title: 'Yeni görev', text: 'Hazır olunca buradan yeni bir sıçrama planlarsın. Artık bölgeyi, çağı ve uzmanı sen seçiyorsun.' },
+  ];
+  function mapTour(done) {
+    const tour = document.createElement('div');
+    tour.id = 'tour'; tour.setAttribute('role', 'dialog'); tour.setAttribute('aria-modal', 'true'); tour.setAttribute('aria-labelledby', 'tourTitle');
+    tour.innerHTML = '<div class="tourHole"></div><div class="tourTip"><small id="tourCount"></small><h3 id="tourTitle"></h3><p id="tourText" aria-live="polite"></p><div class="tourActions"><button id="tourSkip">Turu atla</button><button id="tourNext" class="primary"></button></div></div>';
+    document.body.append(tour);
+    const hole = tour.querySelector('.tourHole'), tip = tour.querySelector('.tourTip'), next = tour.querySelector('#tourNext');
+    const drawer = $('#cardDrawer'), drawerWasOpen = drawer.open;
+    let at = 0;
+    const place = () => {
+      const target = document.querySelector(tourSteps[at].target);
+      if (!target) return;
+      const r = target.getBoundingClientRect(), gap = 12, pad = 6;
+      Object.assign(hole.style, { left: r.left - pad + 'px', top: r.top - pad + 'px', width: r.width + pad * 2 + 'px', height: r.height + pad * 2 + 'px' });
+      const t = tip.getBoundingClientRect();
+      const below = r.bottom + pad + gap + t.height <= innerHeight, above = r.top - pad - gap - t.height >= 0;
+      const top = below ? r.bottom + pad + gap : above ? r.top - pad - gap - t.height : Math.max(gap, (innerHeight - t.height) / 2);
+      tip.style.top = top + 'px';
+      tip.style.left = Math.max(gap, Math.min(innerWidth - t.width - gap, r.left + r.width / 2 - t.width / 2)) + 'px';
+    };
+    const show = () => {
+      const step = tourSteps[at];
+      drawer.open = step.open ? true : drawerWasOpen;
+      document.querySelector(step.target)?.scrollIntoView?.({ block: 'nearest' });
+      tour.querySelector('#tourCount').textContent = `KOMUTA EKRANI · ${at + 1} / ${tourSteps.length}`;
+      tour.querySelector('#tourTitle').textContent = step.title;
+      tour.querySelector('#tourText').textContent = step.text;
+      next.textContent = at === tourSteps.length - 1 ? 'Anladım' : 'Sonraki →';
+      place(); next.focus();
+    };
+    const finish = () => { removeEventListener('resize', place); drawer.open = drawerWasOpen; tour.remove(); done(); };
+    next.onclick = () => { if (at === tourSteps.length - 1) finish(); else { at++; show(); } };
+    tour.querySelector('#tourSkip').onclick = finish;
+    tour.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { e.preventDefault(); finish(); }
+      if (e.key === 'Tab') { e.preventDefault(); (document.activeElement === next ? tour.querySelector('#tourSkip') : next).focus(); }
+    });
+    addEventListener('resize', place);
+    show();
+  }
+  function afterTurn() {
+    persistRun();
+    closeModal(); renderAll();
+    if (CINEMA && !FAST && !G.over && G.jumps === 1 && !tourSeen) { tourSeen = true; return mapTour(continueTurn); }
+    continueTurn();
+  }
+  function continueTurn() {
+    const ctx = CP.nextLetter(G);
+    if (ctx) showLetter(ctx);
+    else if (CINEMA && G.jumps === 1 && !G.over) openBridge();
+  }
+  function openBridge() {
+    if (!CINEMA || replaying || G.over) return;
+    closeModal();
+    CP.cinema.home(G,
+      () => { CP.cinema.close(); openPlanner(); },
+      () => { CP.cinema.close(); renderAll(); },
+      () => { CP.cinema.close(); showBook(); }, saveNotice);
+  }
+  function persistRun() {
+    if (!CP.store) return;
+    G.tutorialGuided = guidedStart;
+    const result = CP.store.write(G);
+    saveNotice = result.ok ? 'Döngü bu tarayıcıda kaydedildi. Sayfayı yenileyince devam edebilirsin.' : result.message;
+    $('#saveStatus').textContent = saveNotice;
+    if (result.ok) savedRun = CP.store.inspect();
+  }
+  function resumeGame() {
+    const result = CP.store.read();
+    if (!result.ok) { savedRun = { status: 'invalid' }; saveNotice = result.message; intro(); return; }
+    G = result.game; seenIntro = true; guidedStart = !!G.tutorialGuided && G.jumps === 0;
+    viewYear = 2070; sel = null; compareTl = null; lastKeys = new Set();
+    saveNotice = 'Kayıt açıldı. Dünya, önceki kararlarından yeniden hesaplandı.';
+    CP.cinema?.close(); closeModal(); renderAll();
+    if (G.over) return showEnd();
+    if (guidedStart) return firstBriefing();
+    const ctx = CP.nextLetter(G);
+    if (ctx) return showLetter(ctx);
+    if (CINEMA) openBridge();
+  }
+  // Vakiftan mektup
+  function showLetter(ctx) {
+    const m = CP.missionById(ctx.iv.mission);
+    if (CINEMA && CP.sceneAudio.initialized) CP.sceneAudio.cue('letter');
+    modal(`<h2>Geçmişten Bir Mektup</h2>${CINEMA ? CP.story.dialogue('leyla', `${CP.regionName(ctx.iv.region, ctx.year)} içindeki ${m.name} kuruluşunun mirasçılarından bir mektup var. Size okuyorum: ${ctx.letter.text}`) : ''}<p style="margin:0;color:var(--dim)">${yr(ctx.year)}, ${CP.regionName(ctx.iv.region, ctx.year)}. Kurduğun "${m.name}" görevinin mirasçılarından. Yanıtlamak sıçrama harcatmaz.</p>
+      <h3>${ctx.letter.title}</h3><p class="lead">${ctx.letter.text}</p>
+      <div class="optGrid">${ctx.letter.opts.map((o, i) => `<button class="opt" data-l="${i}"><b>${o.t}</b>${optTags(o)}</button>`).join('')}</div>
+      <div class="mfoot"><button id="mClose">Mektubu yanıtsız bırak</button></div>`);
+    document.querySelectorAll('[data-l]').forEach((b) => {
+      b.onclick = () => {
+        const o = ctx.letter.opts[+b.dataset.l];
+        const rep = CP.answerLetter(G, ctx, o);
+        persistRun();
+        renderAll();
+        if (G.over) return showEnd();
+        modal(`<h2>Mektuba Yanıt</h2>${CINEMA ? CP.story.dialogue('leyla', 'Yanıtını kayda geçirdim. Şimdi aynı bölgenin önceki ve yeni ölçümlerine bakalım; her kazanımın başka bir etkisi olabilir.') : ''}<div class="chain"><div><i>${ctx.year}</i>${CP.fill(o.log, ctx.iv.region, ctx.year)}</div></div>
+          ${localBlock(ctx.iv.region, rep)}<div class="mfoot"><button id="mClose">Devam</button></div>`);
+        $('#mClose').onclick = closeModal;
+      };
+    });
+    $('#mClose').onclick = () => { G.lastLetter = G.jumps; persistRun(); closeModal(); };
+  }
+
+  // ---- Kartlar ----
+  function useCard(i) {
+    if (replaying || G.over) return;
+    if (guidedStart && G.jumps === 0) return firstBriefing();
+    const c = CARDS.find((x) => x.id === G.hand[i]);
+    const fire = (region) => {
+      const rep = CP.playCard(G, i, region);
+      closeModal();
+      if (!rep) return;
+      persistRun();
+      renderAll();
+      if (G.over) return showEnd(rep);
+      if (rep.diff.newMilestones.length) sfx.mile(); else sfx.good();
+      modal(`<h2>${c.name}</h2>${reportBody(rep)}<div class="mfoot"><button id="mClose">Tamam</button></div>`);
+      $('#mClose').onclick = closeModal;
+    };
+    if (!c.target) return fire();
+    modal(`<h2>${c.name}</h2><p class="lead">${c.desc}</p><div class="optGrid regionChoices">${REGIONS.map((r) => `<button class="opt" data-t="${r.id}"><b>${r.name}</b></button>`).join('')}</div><div class="mfoot"><button id="mClose">Vazgeç</button></div>`);
+    document.querySelectorAll('[data-t]').forEach((b) => { b.onclick = () => fire(b.dataset.t); });
+    $('#mClose').onclick = closeModal;
+  }
+
+  // ---- Tarih Kitabi (sair gozu) ----
+  function chronicle(interactive) {
+    const lines = [
+      ...G.ivs.filter((i) => i.kind === 'drop').map((i) => ({ y: i.year, text: `${CP.regionName(i.region, i.year)}: Kimliği bilinmeyen bir ${ROLES[i.role].name.toLowerCase()} ortaya çıktı. Kayıtlar onu "uzaktan gelen" diye anıyor.`, good: true })),
+      ...G.tl.log.filter((e) => e.kind !== 'minor' || e.good),
+    ].sort((a, b) => a.y - b.y);
+    return lines.map((e) => {
+      const can = interactive && CP.canBlock(G, e);
+      return `<div class="${e.good ? '' : 'bad'}"><i>${e.y}</i>${e.text}${can ? ` <button class="mini" data-ev="${e.y}|${e.r}|${e.id}">Önle (${CP.eraCost(G, Math.max(430, e.y - 10))} enerji)</button>` : ''}${e.cause ? `<small class="cause">${e.cause}</small>` : ''}</div>`;
+    }).join('') || '<div>Tarih henüz sessiz.</div>';
+  }
+  function showBook() {
+    modal(`<h2>Tarih Kitabı</h2><p style="color:var(--dim);margin:0">Bu zaman çizgisinin kroniği, her sıçramada yeniden yazılır. <b style="color:var(--cy)">Bir felaketi seçip önlemeye gidebilirsin.</b></p><div class="chain">${chronicle(!G.over)}</div><div class="mfoot"><button id="mClose">Kapat</button></div>`);
+    $('#mClose').onclick = closeModal;
+    document.querySelectorAll('[data-ev]').forEach((b) => {
+      b.onclick = () => {
+        const [y, r, id] = b.dataset.ev.split('|');
+        const ev = G.tl.log.find((e) => e.y === +y && e.r === r && e.id === id);
+        if (ev) preventEvent(ev);
+      };
+    });
+  }
+
+  // ---- Oyun sonu ----
+  function showEnd() {
+    persistRun();
+    const e = ENDINGS[G.over] || ENDINGS.energy;
+    const q = QUOTES[Math.floor(CP.hash01(G.seed, 'q', G.jumps) * QUOTES.length)];
+    const g = G.tl.final.global;
+    const bestReal = REAL.map((r) => r).sort((a, b) => (CP.hash01(G.seed, a.key) - CP.hash01(G.seed, b.key))).slice(0, 2);
+    modal(`<h2 style="font-size:26px;${G.over === 'win' ? 'color:var(--amb)' : 'color:var(--red)'}">${e.title}</h2><p class="lead">${e.text}</p>
+      <div class="quote">"${q}"<small>Bu çizgide yaşamış, adı unutulmuş bir düşünür</small></div>
+      <div class="cols"><div><h3>2070'in Son Hali (${G.jumps} sıçrama)</h3>
+      <div class="stat"><span>İkinci Prototip</span><b>%${Math.round(CP.proto(G))}</b></div>${Object.entries(CP.TRACKS).map(([k, n]) => `<div class="stat"><span>${n} kolu</span><b>%${Math.round(CP.tracks(G)[k])}</b></div>`).join('')}
+      ${GLOBALS.flatMap((x) => x.items).map((it) => `<div class="stat"><span>${it.name}</span><b>${Math.round(g[it.key])}${it.unit || ''}</b></div>`).join('')}
+      <div class="stat"><span>Küresel Sıcaklık Artışı</span><b>+${g.heat.toFixed(1)}°C</b></div></div>
+      <div><h3>Gerçek Dünyada</h3>${bestReal.map((r) => `<p style="margin:0 0 6px">${r.text}</p>`).join('')}
+      <h3>Bu Çizginin Tarihi</h3><div class="chain" style="max-height:280px;overflow:auto">${chronicle(false)}</div></div></div>
+      <div class="mfoot"><span></span><button class="primary" id="mRe">YENİ DÖNGÜ</button></div>`);
+    $('#mRe').onclick = () => start();
+  }
+
+  function firstBriefing() {
+    CP.hud?.setVisible(true);
+    const p = CP.firstMission(G);
+    if (!p) { guidedStart = false; renderAll(); return openPlanner(); }
+    if (CINEMA) return CP.cinema.briefing(G, p, () => startMission(p));
+    modal(`<p class="eyebrow">İLK GÖREV · 2070 → M.S. 430</p><h2>Suyun izi</h2>
+      <div class="briefing"><div><p class="lead">Anadolu’nun geleceğinde bir havzayı korumayı deneyeceğiz.</p>
+      <p>${CP.missionReason(G, p, 'ana')}</p>
+      <p>M.S. 430’da Kızılırmak kıyısına bir araştırmacı bırak. Bir koruma alanı kur ve mirasının nasıl yaşayacağına üç kararla yön ver.</p></div>
+      <dl><div><dt>Hedef</dt><dd>Koruma Toprakları Kur</dd></div><div><dt>Ekip</dt><dd>1 araştırmacı</dd></div><div><dt>Bedel</dt><dd>20 enerji</dd></div></dl></div>
+      <p class="tutorialNote">Önce karar verirsin. Sonra tarih yeniden akar; raporda kararının izini ve ölçülen sonucu görürsün. Uzun vadeli mirasın sürmesi garanti değildir.</p>
+      <div class="mfoot"><button id="mClose">Komuta merkezine dön</button><button class="primary" id="mFirst">Göreve başla</button></div>`);
+    $('#mClose').onclick = closeModal;
+    $('#mFirst').onclick = () => startMission(p);
+  }
+
+  function intro() {
+    CP.hud?.setVisible(false);
+    if (CINEMA) return CP.cinema.intro(G,
+      () => { seenIntro = true; CP.cinema.prologue(firstBriefing); },
+      { summary: savedRun.status === 'ready' ? savedRun.summary : null, onResume: resumeGame,
+        notice: savedRun.status === 'invalid' ? 'Önceki kayıt açılamıyor; üzerine yazılmadı. Yeni döngüye başlayabilirsin.' : savedRun.status === 'unavailable' ? 'Tarayıcının kayıt alanına erişilemiyor; bu sekmede oynamaya devam edebilirsin.' : '' });
+    modal(`<p class="eyebrow">TEMPORAL SHIFT · KOMUTAN BRİFİNGİ</p><h2>Gelecek, geçmişte başlar.</h2>
+      <p class="lead">Zaman teknolojisini yasaklayan totaliter bir rejimden kaçırılan tek prototip, seni 2070’e getirdi. Dünyanın ve ikinci bir prototipin geleceği, geçmişte bırakacağın izlere bağlı.</p>
+      <ol class="introSteps"><li><b>Bir görev bırak.</b><span>Uzmanını geçmişe gönder, üç karar ver.</span></li><li><b>Tarihin değişimini izle.</b><span>Mirasının kuşaklar sonraki izlerini gör.</span></li><li><b>Üç kolu tamamla.</b><span>Teknoloji, Ekosistem ve Barış: hepsi %100.</span></li></ol>
+      <p class="muted">İlk görev Anadolu’da. Ekip üyesi ve enerji harcarsın; her kararın bir bedeli olabilir.</p>
+      ${savedRun.status === 'ready' ? `<p class="saveNote">Kayıtlı döngü: ${savedRun.summary.jumps} sıçrama · %${Math.round(savedRun.summary.energy)} enerji.</p><button class="primary" id="mResume">${savedRun.summary.over ? 'Son döngüyü gör' : 'Döngüye devam et'}</button>` : ''}
+      <div class="mfoot"><button id="mFree">Keşfederek başla</button><button class="primary" id="mGo">İlk göreve başla</button></div>`);
+    $('#mGo').onclick = () => { seenIntro = true; firstBriefing(); };
+    if ($('#mResume')) $('#mResume').onclick = resumeGame;
+    $('#mFree').onclick = () => { seenIntro = true; guidedStart = false; closeModal(); renderAll(); };
+  }
+
+  // ---- Canli pencere (sanatci gozu): dunyanin durumu arka plani degistirir ----
+  const cv = $('#window'), ctx = cv.getContext('2d');
+  let windowHealth = 0.2, windowTarget = 0.2, drops = [];
+  const buildings = Array.from({ length: 60 }, (_, i) => ({ x: i / 60, w: 0.012 + CP.hash01('w', i) * 0.03, h: 0.12 + CP.hash01('h', i) * 0.4, lit: CP.hash01('l', i) }));
+  function paintWindow(g) {
+    const gl = g || hist(viewYear).global;
+    const eco = (gl.bio + gl.water + gl.soil) / 3;
+    windowTarget = CP.clamp((eco - 25 + (500 - gl.ppm) / 15) / 55, 0, 1);
+    const vt = $('#viewTxt');
+    if (vt) vt.textContent = windowTarget < 0.25 ? 'Asit yağmuru, kapalı gökyüzü' : windowTarget < 0.55 ? 'Dumanlı ama yağmur seyrek' : windowTarget < 0.8 ? 'Bulutlar açılıyor' : 'Açık gökyüzü, temiz hava';
+    if (reducedMotion) { windowHealth = windowTarget; frame(); }
+  }
+  function resize() { cv.width = innerWidth; cv.height = innerHeight; }
+  addEventListener('resize', resize);
+  function frame() {
+    if (CP.cinema?.active) { if (!reducedMotion) requestAnimationFrame(frame); return; }
+    windowHealth += (windowTarget - windowHealth) * 0.03;
+    const h = windowHealth, W = cv.width, H = cv.height;
+    const mix = (a, b) => a.map((v, i) => Math.round(v + (b[i] - v) * h));
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, `rgb(${mix([34, 42, 54], [45, 110, 150])})`);
+    g.addColorStop(0.7, `rgb(${mix([84, 56, 46], [190, 210, 190])})`);
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+    for (const b of buildings) {
+      const bw = b.w * W, bh = b.h * H, x = b.x * W;
+      ctx.fillStyle = `rgb(${mix([9, 13, 18], [30, 66, 58])})`;
+      ctx.fillRect(x, H - bh, bw, bh);
+      if (b.lit < 0.6) { ctx.fillStyle = `rgba(${h > 0.5 ? '180,240,200' : '230,90,80'},.35)`; ctx.fillRect(x + bw * 0.3, H - bh + 8, bw * 0.3, 3); }
+    }
+    const rain = reducedMotion ? 0 : Math.round(160 * (1 - h));
+    while (drops.length < rain) drops.push([Math.random() * W, Math.random() * H, 8 + Math.random() * 12]);
+    drops.length = rain;
+    ctx.strokeStyle = 'rgba(150,190,210,.22)'; ctx.beginPath();
+    for (const d of drops) { ctx.moveTo(d[0], d[1]); ctx.lineTo(d[0] - 2, d[1] + d[2]); d[1] += d[2]; if (d[1] > H) d[1] = -20; }
+    ctx.stroke();
+    if (!reducedMotion) requestAnimationFrame(frame);
+  }
+
+  function start() {
+    const seed = qs.has('seed') ? +qs.get('seed') : undefined;
+    G = CP.newGame(seed);
+    if (CP.store) { G.saveId = CP.newSaveId(); savedRun = CP.store.inspect(); }
+    saveNotice = savedRun.status === 'unavailable' ? 'Bu tarayıcıda kayıt alanına erişilemiyor.' : '';
+    CP.cinema?.close();
+    viewYear = 2070; sel = null; guidedStart = !seenIntro && !qs.has('skip'); lastKeys = new Set(); compareTl = null;
+    for (const id of ['legacyDrawer', 'cardDrawer', 'dataDrawer']) $('#' + id).open = false;
+    renderAll(); closeModal();
+    if (!seenIntro && !qs.has('skip')) intro();
+  }
+  CP.debug = { get G() { return G; }, renderAll, openPlanner, openRegion, showEnd, showBook, preventEvent, openEra, openMissions };
+
+  $('#btnJump').onclick = () => openPlanner();
+  $('#btnBook').onclick = showBook;
+  $('#btnBridge').onclick = openBridge;
+  $('#btnSave').onclick = () => { if (!replaying && !G.over) persistRun(); };
+  $('#btnMute').onclick = () => { muted = !muted; CP.cinema?.setMuted(muted); $('#btnMute').textContent = muted ? 'Ses: Kapalı' : 'Ses: Açık'; };
+  $('#btnEnd').onclick = () => { G.over = G.over || 'quit'; showEnd(); };
+  buildMap(); resize(); start(); requestAnimationFrame(frame);
+})();
