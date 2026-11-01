@@ -309,3 +309,5 @@ body.storyMode{background:#0a1316}
 .cTraceList{list-style:none;margin:16px 0;padding:0;display:grid;gap:6px;font-size:13px;line-height:1.45;color:#e6e8dc}.cTraceList li{display:grid;grid-template-columns:44px minmax(0,1fr);gap:8px}.cTraceList i{font-style:normal;font-weight:700;color:#d8c99e}
 @media(max-width:800px){.reportCols{grid-template-columns:1fr}.bflyList{max-height:none}}
 .reportData .stat{padding-top:2px;padding-bottom:2px}.reportData h3{font-size:15px!important;margin-bottom:2px!important}
+
+#modalBox{scrollbar-width:thin;scrollbar-color:#6f8075 transparent}
