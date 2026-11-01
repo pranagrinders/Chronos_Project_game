@@ -32,7 +32,7 @@ try{
  click('[data-choice="1"]');check($('#cChoiceVisual img').getAttribute('src').includes('protected-boundary'),'Sınır yolu kapalı otlak sahnesini gösterir');
  check($('#cChoiceDetails .cChoiceCost').textContent.includes('Toplumsal gerilim artar'),'Sınırın insanlara bedeli görünür; yalnız yeşil fayda gösterilmez');
  click('#cConfirm');choose(0);check(G.jumps===1&&G.energy<100&&G.crew.res===1,'Üçüncü onay tek gerçek sıçramayı gerçekleştirir');
- click('#cSkip');click('#cContinue');click('#cMap');
+ click('#cSkip');click('#cContinue');
  check($('#left').contains($('#legacyDrawer'))&&$('#left').contains($('#cardDrawer')),'Geçmiş kuruluş eylemleri sadeleştirilen haritada erişilebilir kalır');
  check(!$('#dispatch')&&!!$('#leader img')&&$('#view').contains($('#window'))&&!!$('#mapHint'),'Sağ kolon yok; ekip lideri, seyir ekranı ve harita yönergesi var');
  click('#r_kam');check(!$('#modal').classList.contains('hidden')&&$('#modalBox').textContent.includes('Yatırım Dağılımı'),'Haritadan bölge seçmek bölge bilgilerini açar');

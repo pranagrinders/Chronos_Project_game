@@ -23,7 +23,7 @@ try{
  a.click('#cBegin');a.finish();const G=a.w.CP.debug.G;key=a.w.CP.store.key;raw=a.w.localStorage.getItem(key);
  check(!!raw&&JSON.parse(raw).data.jumps===1,'Tamamlanan ilk görev otomatik kaydedilir');
  check(!raw.includes('history')&&raw.length<15000,'Kayıt küçük kalır; tarih tablolarını içermez');
- check(a.$('#cinema').textContent.includes('kaydedildi'),'Komuta güvertesinde gerçek kayıt durumu görünür');
+ check(a.$('#saveStatus').textContent.includes('kaydedildi'),'Haritada gerçek kayıt durumu görünür');
  expected=JSON.stringify({tl:G.tl,energy:G.energy,crew:G.crew,hand:G.hand,tracks:a.w.CP.tracks(G)});
  check(a.errors.length===0,'Kayıt oluşturulurken çalışma zamanı hatası yok');
 }finally{a.dom.window.close();}

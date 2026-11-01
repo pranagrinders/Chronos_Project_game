@@ -719,7 +719,6 @@
     if (org) return showOrg(org);
     const ctx = CP.nextLetter(G);
     if (ctx) showLetter(ctx);
-    else if (CINEMA && G.jumps === 1 && !G.over) openBridge();
   }
   function openBridge() {
     if (!CINEMA || replaying || G.over) return;

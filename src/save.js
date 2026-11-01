@@ -6,7 +6,7 @@ globalThis.CP = globalThis.CP || {};
   const optionKey = (o) => o.t + '\n' + o.log;
   const options = new Map([
     ...CP.FIELD.flatMap((s) => s.opts), ...CP.MISSIONS.flatMap((m) => m.crisis.opts),
-    ...CP.BLOCK_MISSION.crisis.opts, ...CP.FINALS.opts, ...CP.LETTERS.flatMap((l) => l.opts),
+    ...CP.BLOCK_MISSION.crisis.opts, ...CP.FINALS.opts, ...CP.LETTERS.flatMap((l) => l.opts), ...CP.TUTORIAL_STAGES.flatMap((s) => s.opts),
   ].map((o) => [optionKey(o), o]));
   const regions = new Set(CP.REGIONS.map((r) => r.id));
   const cards = new Map(CP.CARDS.map((c) => [c.id, c]));

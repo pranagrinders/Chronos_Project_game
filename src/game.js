@@ -153,6 +153,7 @@ globalThis.CP = globalThis.CP || {};
 
   // Gorevin uc karari: gelis, kriz, final
   CP.stages = function stages(G, plan) {
+    if (plan.tutorial) return CP.TUTORIAL_STAGES;
     const f = FIELD.filter((x) => x.role === plan.role && plan.year >= x.from && plan.year <= x.to);
     const arrive = f[Math.floor(CP.hash01(G.seed, 'field', G.jumps, plan.role, plan.region) * f.length)];
     return [arrive, plan.m.crisis, FINALS].map((s) => ({ ...s, text: CP.fill(s.text, plan.region, plan.year) }));

@@ -64,17 +64,8 @@ globalThis.CP = globalThis.CP || {};
     {art:'past',kicker:'BEDELİ',title:'Her yolculuk bir şey götürür.',text:['Her sıçrama makinenin enerjisini tüketir.','Geçmişe bıraktığın kişi o çağda kalır, ömrünü orada geçirir. Ekibin az. Enerjin sınırlı.']},
     {art:'past',kicker:'İLK GÖREVİN',title:'Komutan sensin.',text:['Araştırmacın Leyla gitmeye hazır.','Hedef: M.S. 430, Kızılırmak kıyısı. Suyu koruyacak kuralı orada başlat.'],person:'researcher.png'},
   ];
-  // İlk görevin sade anlatımı. Yalnız metindir; seçeneklerin kuralları content.js'te kalır.
-  const tutorialStages={
-    'Kayıp Tablet':{line:'Komutan, vardık. Harabelerde eski bir iklim kaydı buldum. Bu bilgi 2070’e ulaşmalı. Saklayayım mı, çoğaltıp yayayım mı?',hints:{'Mağaraya mühürle':'Bilgi güvende kalır, ama az kişi öğrenir.','Kopyalatıp yay':'Çok kişi öğrenir, ama iz daha kolay silinir.'}},
-    'Kervan Yolu':{line:'Komutan, vardık. Bir kervan bize katılmayı teklif ediyor. Onlarla gidersem daha çok yere ulaşırım; kalırsam bu vadiyi yakından izlerim. Ne yapayım?',hints:{'Kervanla git':'Daha çok yere ve insana ulaşırsın.','Tek bir noktada derinleş':'Bu vadiyi kuşaklarca izlersin; su korunur, iz uzun yaşar.'}},
-    'Sınır Anlaşmazlığı':{line:'Ben Dara, çobanım. Meclisinizin su kuralları otlaklarımızı kapatıyor. Sürümü nerede besleyeceğim? Suyu korumak istiyorsun, anladım. Ama biz de burada yaşıyoruz.',hints:{'Ortak yönetim kur':'Çobanlar meclise katılır. Gerginlik düşer, kurallar biraz gevşer.','Sınırı koru':'Su kuralları katı kalır, çobanlar öfkelenir.'}},
-    'Ayrılık':{line:'Yıllar geçti, Komutan. Saçlarım ağardı. Ben öldükten sonra Su Meclisi’ne kim sahip çıkacak?',hints:{'Yerel halka devret':'Daha küçük kalır, ama uzun yaşar.','Sermayeyle büyüt':'Para güç katar; etkisi zamanla büyür.','Komşulara yay':'Komşu bölgelere de ulaşır; burada biraz zayıflar.'}},
-  };
-  const tutorialHint=(plan,index,option)=>plan.tutorial?tutorialStages[plan.stages[index].title]?.hints[option.t]:null;
-  function stageLine(plan,index){
-    return (plan.tutorial&&tutorialStages[plan.stages[index].title]?.line)||plan.stages[index].text;
-  }
+  const tutorialHint=(plan,index,option)=>plan.tutorial?option.hint:null;
+  const stageLine=(plan,index)=>plan.stages[index].text;
   // Seçeneğin metnine göre sahne. Sıra önemli: ilk eşleşen kazanır, eşleşmeyen sahadaki ekibe düşer.
   const VISUAL_WORDS=[
     ['archive',['gizle','sakla','defter','ezber','kaçır','olduğu gibi']],
@@ -90,7 +81,9 @@ globalThis.CP = globalThis.CP || {};
     route:{image:'anatolia-430.png',caption:'Bilgi kişiden kişiye ve yoldan yola yayılır.'},
     growth:{image:'common-grazing.png',caption:'Yatırım ve üretim, işi büyütmek için devreye girer.'},
   };
+  const TUTORIAL_ART={archive:'sahne-arsiv-eski.jpg',route:'sahne-yayilim-eski.jpg',spread:'sahne-yayilim-eski.jpg',observe:'sahne-saha-eski.jpg',growth:'sahne-buyume-eski.jpg'};
   function visual(option){
+    if(option.art)return{kind:option.art,image:option.image||TUTORIAL_ART[option.art],caption:option.caption};
     const t=option.t.toLocaleLowerCase('tr-TR');
     if(t.includes('ortak yönetim'))return{kind:'council',image:'common-grazing.png',caption:'İnsanlar otlakları ve koruma alanını birlikte yönetir.'};
     if(t.includes('sınırı koru'))return{kind:'boundary',image:'protected-boundary.png',caption:'Koruma güçlenir; sürülerin eski otlaklara erişimi kesilir.'};
@@ -104,6 +97,7 @@ globalThis.CP = globalThis.CP || {};
     return{kind:option.fx?.unrest>0?'boundary':'observe',image:option.fx?.unrest>0?'protected-boundary.png':'anatolia-430.png',caption:'Görev ekibinin uygulayacağı yolun temsili canlandırması.'};
   }
   function choiceLead(o,preview){
+    if(o.lead)return o.lead;
     const pct=Math.round(Math.abs((o.mult||1)-1)*100), t=o.t.toLocaleLowerCase('tr-TR');
     if(t.includes('ortak yönetim'))return `Otlakları birlikte yönetiyoruz. Çiftçiler kararın parçası oluyor ve gerilim azalıyor; buna karşılık koruma görevinin gücü %${pct} düşüyor.`;
     if(t.includes('sınırı koru'))return `Otlak sınırını kapalı tutuyoruz. Koruma görevinin gücü %${pct} artıyor; geçimi bu alana bağlı insanların tepkisi yükseliyor.`;

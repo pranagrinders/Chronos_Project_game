@@ -41,9 +41,8 @@ try{
  const actual=$('#resourceHud').textContent;click('#cBefore');
  check($('#resourceHud').textContent===actual,'Önceki dünya karşılaştırması geminin gerçek kaynaklarını geri sarmaz');
  click('#cAfter');click('#cContinue');
- check($('#resourceHud').parentElement===$('#cinema')&&value('res')==='1','Güverteye dönüşte tek şerit ve doğru ekip kalır');
+ check(value('res')==='1','Haritaya dönüşte tek şerit ve doğru ekip kalır');
  key=w.CP.store.key;saved=w.localStorage.getItem(key);
- click('#cMap');
  check($('#resourceHud').parentElement===w.document.body&&!$('#resourceHud').hidden,'Haritaya geçince kaynaklar gizlenen sinematikte kalmaz');
  click('#btnBook');
  check($('#resourceHud').parentElement===$('#modal')&&$('#modal').getAttribute('role')==='dialog','Tarih Kitabı kaynak şeridini aynı erişilebilir diyalogda tutar');

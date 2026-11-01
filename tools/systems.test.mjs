@@ -134,3 +134,14 @@ test('Başarımlar: simülasyonu değiştirmez, kazanılan kalır, müdahalesiz 
   G.over = 'win';
   assert.ok(CP.checkAch(G).some((a) => a.id === 'win'), 'Kazanınca Son Döngü verilir');
 });
+
+test('İlk görev kendi sahnelerini kullanır, seçenekleri kayıttan geri gelir', () => {
+  const { CP } = globalThis;
+  const G = CP.newGame(7), plan = { ...CP.firstMission(G) };
+  const stages = CP.stages(G, plan);
+  assert.equal(stages, CP.TUTORIAL_STAGES);
+  for (const s of stages) { assert.ok(s.when && s.guide && s.text.length > 40); for (const o of s.opts) assert.ok(o.lead && o.hint && o.art && o.caption && o.log); }
+  plan.choices = stages.map((s) => s.opts[s.opts.length - 1]);
+  CP.jump(G, plan);
+  assert.deepEqual(CP.store.unpack(CP.store.pack(G)).ivs[0].choices.map((c) => c.t), plan.choices.map((c) => c.t));
+});
