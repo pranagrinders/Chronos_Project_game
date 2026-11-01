@@ -8,21 +8,22 @@ globalThis.CP = globalThis.CP || {};
     dara:{name:'Dara',role:'Çoban · Kızılırmak havzası, 430',image:'dara.png'},
   };
   const crew = {
-    res: ['Alan araştırmacısı · Temporal Shift', ['arastirmaci-1', 'Selim Aydın', 'Emre Kaya', 'Tolga Şen', 'Ozan Tuna'], ['arastirmaci-2', 'Naz Demir', 'Zeynep Arslan', 'Sevgi Tan', 'Gül Aksoy']],
-    sci: ['Bilim insanı · Temporal Shift', ['bilim-1', 'Dr. Ada Yılmaz', 'Dr. Ece Korkmaz', 'Dr. Selin Aksu', 'Dr. Defne Kurt'], ['bilim-2', 'Dr. Kaan Erdem', 'Dr. Orhan Güven', 'Dr. Haluk Tekin', 'Dr. Cemal Uz']],
-    edu: ['Eğitmen · Temporal Shift', ['egitim-1', 'Elif Şahin', 'Merve Yıldız', 'Ayşe Polat', 'Esra Çelik'], ['egitim-2', 'Murat Koç', 'Hasan Öztürk', 'İbrahim Aslan', 'Yusuf Demirel']],
+    res: ['Alan araştırmacısı · Temporal Shift', ['arastirmaci-1', 'Selim Aydın', 'Emre Kaya', 'Tolga Şen', 'Ozan Tuna'], ['arastirmaci-2', 'Naz Demir', 'Zeynep Arslan', 'Sevgi Tan', 'Gül Aksoy'], ['arastirmaci-3', 'Kenji Mori', 'Minh Tran', 'Jun Park', 'Hiro Sato']],
+    sci: ['Bilim insanı · Temporal Shift', ['bilim-1', 'Dr. Ada Yılmaz', 'Dr. Ece Korkmaz', 'Dr. Selin Aksu', 'Dr. Defne Kurt'], ['bilim-2', 'Dr. Kaan Erdem', 'Dr. Orhan Güven', 'Dr. Haluk Tekin', 'Dr. Cemal Uz'], ['bilim-3', 'Dr. Kwame Mensah', 'Dr. Samuel Okoye', 'Dr. Daniel Abebe', 'Dr. Tunde Bello']],
+    edu: ['Eğitmen · Temporal Shift', ['egitim-1', 'Elif Şahin', 'Merve Yıldız', 'Ayşe Polat', 'Esra Çelik'], ['egitim-2', 'Murat Koç', 'Hasan Öztürk', 'İbrahim Aslan', 'Yusuf Demirel'], ['egitim-3', 'Ahmet Karaca', 'Kemal Sezer', 'Nuri Bayrak', 'Rıza Ertan']],
   };
   const portraits = new Set();
   // Aynı portre farklı adlarla kullanılır; ad, portredeki kişinin cinsiyetine uyar.
   const people = {};
-  for (const [key, [role, a, b]] of Object.entries(crew)) {
+  for (const [key, [role, ...faces]] of Object.entries(crew)) {
     people[key] = [];
-    for (let i = 1; i < a.length; i++) for (const [p, name] of [[a[0], a[i]], [b[0], b[i]]]) {
+    for (let i = 1; i < faces[0].length; i++) for (const f of faces) {
+      const p = f[0], name = f[i];
       const id = i === 1 ? p : `${p}~${i}`;
       cast[id] = { name, role, image: p + '.png', portrait: p };
       people[key].push(id);
     }
-    for (const p of [a[0], b[0]]) if (globalThis.Image) { const img = new Image(); img.onload = () => portraits.add(p); img.src = `assets/cinema/${p}.png`; }
+    for (const [p] of faces) if (globalThis.Image) { const img = new Image(); img.onload = () => portraits.add(p); img.src = `assets/cinema/${p}.png`; }
   }
   // Göreve giden uzman. n: bu rolden daha önce kaç kişi gitti.
   const crewId = (role, n) => { const list = people[role] || []; return list[n % (list.length || 1)]; };
