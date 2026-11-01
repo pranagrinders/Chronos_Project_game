@@ -7,6 +7,18 @@ globalThis.CP = globalThis.CP || {};
     cem:{name:'Dr. Cem Sönmez',role:'Bilim sorumlusu · Temporal Shift',image:'cem.png'},
     dara:{name:'Dara',role:'Çoban · Kızılırmak havzası, 430',image:'dara.png'},
   };
+  const crew = {
+    res: [['arastirmaci-1', 'Selim Aydın', 'Alan araştırmacısı · Temporal Shift'], ['arastirmaci-2', 'Naz Demir', 'Alan araştırmacısı · Temporal Shift']],
+    sci: [['bilim-1', 'Dr. Ada Yılmaz', 'Bilim insanı · Temporal Shift'], ['bilim-2', 'Dr. Kaan Erdem', 'Bilim insanı · Temporal Shift']],
+    edu: [['egitim-1', 'Elif Şahin', 'Eğitmen · Temporal Shift'], ['egitim-2', 'Murat Koç', 'Eğitmen · Temporal Shift']],
+  };
+  const portraits = new Set();
+  for (const list of Object.values(crew)) for (const [id, name, role] of list) {
+    cast[id] = { name, role, image: id + '.png' };
+    if (globalThis.Image) { const img = new Image(); img.onload = () => portraits.add(id); img.src = `assets/cinema/${id}.png`; }
+  }
+  // Göreve giden uzman. n: bu rolden daha önce kaç kişi gitti.
+  const crewMember = (role, n) => { const list = crew[role] || [], pick = list[n % (list.length || 1)]; return pick && portraits.has(pick[0]) ? pick[0] : null; };
   const requests = {
     vakif_sci:['cem','Bilgi bir insanla birlikte kaybolmamalı. Burada kuşaklar boyunca çalışacak bir araştırma merkezi kuralım.'],
     vakif_res:['leyla','Ölçmeden karar veriyoruz. Buraya bir gözlem ekibi bırakırsak hem nehri tanırız hem diğer kuruluşları destekleriz.'],
@@ -25,7 +37,7 @@ globalThis.CP = globalThis.CP || {};
     enerji:['cem','Temiz enerji yalnız bir buluş değil, kimin elinde olduğuyla da ilgili. Ortak bir enerji kooperatifi kuralım.'],
     degistir:['cem','Bu olayın mevcut tarihte nasıl bittiğini biliyoruz. Hemen öncesine gidip gidişatı değiştirmeyi deneyebiliriz.'],
   };
-  const request = (offer) => { const [speaker,line] = requests[offer.m.id] || ['leyla',offer.m.desc];return{speaker,line}; };
+  const request = (offer, member) => { const [speaker,line] = requests[offer.m.id] || ['leyla',offer.m.desc];return{speaker:member||speaker,line}; };
   const voiceAvailable = () => window.speechSynthesis?.getVoices().find(v=>v.localService && /^tr(?:-|_)/i.test(v.lang));
   function stopVoice(){window.speechSynthesis?.cancel();}
   function dialogue(who,line,extra=''){
@@ -41,7 +53,7 @@ globalThis.CP = globalThis.CP || {};
   window.speechSynthesis?.addEventListener?.('voiceschanged',()=>bindVoices(document));
   document.addEventListener('visibilitychange',()=>{if(document.hidden)stopVoice();});
   addEventListener('pagehide',stopVoice);
-  const stageSpeaker=(plan,index)=>plan.tutorial&&plan.region==='ana'&&plan.year===430&&index===1?'dara':plan.role==='sci'?'cem':'leyla';
+  const stageSpeaker=(plan,index)=>plan.speaker&&!plan.tutorial?plan.speaker:plan.tutorial&&plan.region==='ana'&&plan.year===430&&index===1?'dara':plan.role==='sci'?'cem':'leyla';
   // Açılış hikâyesi. Görseller aynı vadinin iki hâli üzerinden "bugün / geçmiş" farkını gösterir.
   const prologue=[
     {art:'city',kicker:'YIL 2070',title:'Yağmur artık zehirli.',text:['Nehirler kuruyor. Tarlalar çöle dönüyor.','İnsanlar kalan son suyun başında birbirine düşüyor.']},
@@ -85,10 +97,18 @@ globalThis.CP = globalThis.CP || {};
     if(t.includes('devret'))return `Kuruluşu yerel insanlara devrediyoruz. ${preview && !preview.reduced ? 'Mevcut kalıcılık öngörüsü değişmiyor;' : 'Kalıcılığı desteklemeyi seçiyoruz;'} ana görevin gücünden %${pct} vazgeçiyoruz.`;
     return 'Ekibin uygulayacağı adımı seçiyorsun. Aşağıdaki fayda ve bedeller göreve eklenir; gelecekte ölçülen sonuç diğer kararlar ve tarih ile birlikte oluşur.';
   }
+  // Serbest görevlerde çağa ve eyleme uygun görsel; dosya henüz yoksa eski görsele düşer.
+  const SCENE_KIND={council:'birlik',boundary:'gerilim',route:'yayilim',spread:'yayilim',archive:'arsiv',growth:'buyume',observe:'saha'};
+  const eraSlug=y=>y<1880?'eski':y<1970?'sanayi':'modern';
   function visualFor(option,plan){
     const v=visual(option);
-    return plan && !plan.tutorial && plan.year>=1880 ? {...v,image:v.kind==='boundary'?'anatolia-dry.png':'anatolia-protected.png',caption:'Temsilî saha projeksiyonu · '+v.caption} : v;
+    if(!plan||plan.tutorial)return v;
+    const fallback=plan.year>=1880?(v.kind==='boundary'?'anatolia-dry.png':'anatolia-protected.png'):v.image;
+    return {...v,image:`sahne-${SCENE_KIND[v.kind]}-${eraSlug(plan.year)}.png`,fallback,caption:'Temsilî sahne · '+v.caption};
   }
+  const sceneImg=a=>`<img src="assets/cinema/${a.image}" alt="${esc(a.caption)}"${a.fallback?` onerror="this.onerror=null;this.src='assets/cinema/${a.fallback}'"`:''}>`;
+  // Seçenek alt yazısı: kuraldan üretilen kısa kazanç ve bedel.
+  const choiceSummary=o=>{const m=CP.choiceExplanation(o);return [...m.gains.slice(0,2),...m.costs.slice(0,1)].join(' · ')||'Görevin devamını destekler.';};
   // Zaman fonksiyonu: önceki kareye bağlı durum yok. Geçmiş sonucu bu çizim üretmez.
   function actionFrame(time,kind){
     const p=Math.max(0,Math.min(1,time/2.8)),e=1-Math.pow(1-p,3);
@@ -96,7 +116,7 @@ globalThis.CP = globalThis.CP || {};
   }
   function art(option,plan){
     const a=visualFor(option,plan);
-    return `<div class="storyArt" data-action-kind="${a.kind}"><img src="assets/cinema/${a.image}" alt="${esc(a.caption)}"><svg viewBox="0 0 320 180" aria-hidden="true"><path class="storyRoute" d="M25 140Q120 35 280 70" pathLength="280"/><g class="storyPaper" data-action-paper><rect x="62" y="110" width="35" height="25" rx="2"/><path d="M69 116h20m-20 6h20m-20 6h13"/></g><g class="storyGate" data-action-gate><path d="M125 155v-55m70 55v-55m-70 15h70m-70 20h70"/></g><circle class="storyDestination" cx="280" cy="70" r="7"/></svg><span>${esc(a.caption)}</span></div>`;
+    return `<div class="storyArt" data-action-kind="${a.kind}">${sceneImg(a)}<svg viewBox="0 0 320 180" aria-hidden="true"><path class="storyRoute" d="M25 140Q120 35 280 70" pathLength="280"/><g class="storyPaper" data-action-paper><rect x="62" y="110" width="35" height="25" rx="2"/><path d="M69 116h20m-20 6h20m-20 6h13"/></g><g class="storyGate" data-action-gate><path d="M125 155v-55m70 55v-55m-70 15h70m-70 20h70"/></g><circle class="storyDestination" cx="280" cy="70" r="7"/></svg><span>${esc(a.caption)}</span></div>`;
   }
   function animateArt(node){
     if(!node)return()=>{};
@@ -105,5 +125,5 @@ globalThis.CP = globalThis.CP || {};
     const draw=t=>{if(cancelled||!node.isConnected)return;const f=actionFrame(t,kind);node.style.setProperty('--action-progress',String(f.e));node.querySelector('.storyRoute').style.strokeDashoffset=String(280-f.route);node.querySelector('[data-action-paper]').setAttribute('transform',`translate(${f.paperX} ${f.paperY})`);node.querySelector('[data-action-gate] path').style.strokeDasharray='180';node.querySelector('[data-action-gate] path').style.strokeDashoffset=String((1-f.e)*180);if(f.p<1&&!reduce)requestAnimationFrame(now=>draw((now-start)/1000));};
     draw(reduce?2.8:0);return()=>{cancelled=true;};
   }
-  CP.story={cast,prologue,tutorialHint,request,dialogue,bindVoices,stopVoice,stageSpeaker,stageLine,visual:visualFor,choiceLead,art,animateArt,actionFrame,esc,muted:false};
+  CP.story={cast,crewMember,prologue,tutorialHint,choiceSummary,sceneImg,request,dialogue,bindVoices,stopVoice,stageSpeaker,stageLine,visual:visualFor,choiceLead,art,animateArt,actionFrame,esc,muted:false};
 })();

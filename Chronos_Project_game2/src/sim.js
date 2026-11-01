@@ -159,6 +159,11 @@ globalThis.CP = globalThis.CP || {};
           if (l.echoed[key] || y - l.iv.year < ec.after) return;
           if (hash01(seed, 'mecho', l.iv.id, ei, y) < 0.5) fire(key, ec);
         });
+        (CP.MISSION_NEWS?.[l.m.id] || []).forEach(([from, to, text], ni) => {
+          const key = 'n' + ni;
+          if (l.echoed[key] || y < from || y > to || y - l.iv.year < 10) return;
+          if (hash01(seed, 'news', l.iv.id, ni, y) < 0.3) { l.echoed[key] = true; push({ y, r: id, kind: 'echo', news: true, iv: l.iv.id, good: true, text: CP.fill(text, id, y) }); }
+        });
       }
       for (const c of directs) {
         if (y < c.year) continue;

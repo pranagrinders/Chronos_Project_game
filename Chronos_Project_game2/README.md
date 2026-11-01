@@ -85,3 +85,5 @@ Yeni sistemler: **Dünya Nabzı** (haritanın üstünde, her hedefi besleyen be�
 (sıçramadan önce 2 iş), **Sıçrama hizalama** (atlanabilir; her isabet yakıtı %8 düşürür) ve **Dünya örgütleri**
 (gösterge kotayı aşınca kurulur, 3 yön seçilir). Ayarlar `src/game.js` içindeki `CP.TUNE` satırındadır;
 değiştirince `node tools/balance.mjs` ile ölçün. `TUNE='{"orgQuota":3}'` ortam değişkeni denemeye yarar.
+
+Gemini için portre ve sahne istekleri `assets/cinema/GEMINI_ISTEKLERI.md` içindedir. Dosyalar eklenince oyun onları kendiliğinden kullanır.

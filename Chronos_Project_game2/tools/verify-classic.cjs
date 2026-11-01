@@ -44,7 +44,7 @@ try {
   check($('#btnJump').disabled && $('#btnBook').disabled && $('#btnEnd').disabled, 'Tarih akarken yeni işlem başlatılamaz');
   check([...w.document.querySelectorAll('[data-y]')].every(x => x.disabled), 'Tarih oynatılırken yıl düğmeleri kilitli');
   app.flush();
-  check(text().includes('Kelebek Raporu') && text().includes('KARARIN') && text().includes('TARİHTEKİ İZİ') && text().includes('2070 YILINDA ANADOLU'), 'Rapor karar, gerçek iz ve ölçüm sırasıyla açılır');
+  check(text().includes('Kelebek Raporu') && text().includes('Kelebek Etkisi') && text().includes('İkinci Prototip') && text().includes('Anadolu'), 'Rapor solda kelebek etkisini, sağda ölçümleri gösterir');
   check(!/undefined|NaN/.test(text()), 'Raporda eksik değer veya bozuk sayı yok');
   check(text().includes('Bu Sıçramanın Kaynakları')&&text().includes('ikmal'), 'Klasik raporda enerji harcaması ve ikmal ayrılır');
   check(w.CP.debug.G.jumps === 1 && w.CP.debug.G.ivs[0].choices.length === 3, 'Üç karar tek gerçek sıçrama oluşturur');
@@ -58,7 +58,7 @@ try {
   check(text().includes('Görevin ne?') && w.CP.debug.G.jumps === 1, 'Escape görevi tüketmeden hazırlığa döndürür');
   w.CP.debug.renderAll();
   $('#cardDrawer').open = true; click('[data-c="0"]'); click('[data-t="ana"]');
-  check(text().includes('Acil Durum Fonu') && text().includes('KARARIN'), 'Bölge hedefli kart yeni raporla çalışır');
+  check(text().includes('Acil Durum Fonu') && text().includes('Kelebek Etkisi'), 'Bölge hedefli kart yeni raporla çalışır');
   click('#mClose');
   $('#dataDrawer').open = true;
   click('[data-y="1970"]');

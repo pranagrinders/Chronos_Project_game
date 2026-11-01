@@ -186,7 +186,7 @@
       const progress = founded ? 100 : CP.clamp((CP.orgProgress(G, it.key) / CP.orgQuota(org)) * 100);
       fresh[it.key] = v;
       const changed = y === 2070 && !replaying && pulsePrev[it.key] != null && Math.abs(pulsePrev[it.key] - v) >= min;
-      return `<span class="pulseChip${changed ? ' flash' : ''}${founded ? ' founded' : ''}" title="${org.name}: ${founded ? 'kuruldu' : 'gösterge kotayı aşınca kurulur'}"><small>${it.name}</small><em>${Math.round(v)}${Math.abs(d) >= min ? `<u class="${better ? 'up' : 'dn'}">${d > 0 ? '↑' : '↓'}</u>` : ''}</em><i style="width:${progress}%"></i></span>`;
+      return `<span class="pulseChip${changed ? ' flash' : ''}${founded ? ' founded' : ''}" title="${org.name}: ${founded ? 'kuruldu' : 'gösterge yeterince iyileşince kurulur'}"><small>${it.name}</small><em>${Math.round(v)}${Math.abs(d) >= min ? `<u class="${better ? 'up' : 'dn'}">${d > 0 ? '↑' : '↓'}</u>` : ''}</em><i style="width:${progress}%"></i></span>`;
     }).join('')}</div></div>`).join('');
     if (y === 2070 && !replaying) pulsePrev = fresh;
   }
@@ -387,11 +387,12 @@
     document.querySelectorAll('[data-era]').forEach((b) => { b.onclick = () => openMissions(region, +b.dataset.era); });
     $('#mBack').onclick = () => { sel = null; openPlanner(); };
   }
+  const sentOf = (role) => G.ivs.filter((i) => i.kind === 'drop' && i.role === role).length;
   function missionCard(o, i, region) {
     const intel = G.crew.res > 0 ? CP.intel({ ...o, region }) : null;
     const name = o.current ? `Akım: ${o.current.name}` : o.event ? `Olayı Değiştir` : o.m.name;
     const desc = o.current ? `${o.current.desc} ${o.m.desc}` : o.event ? `<span class="dn">${o.event.y}: ${o.event.text}</span><br>${o.m.desc}` : CP.fill(o.m.desc, region, o.year);
-    const request = CP.story?.request(o), person = request && CP.story.cast[request.speaker];
+    const request = CP.story?.request(o, CP.story.crewMember(o.role, sentOf(o.role))), person = request && CP.story.cast[request.speaker];
     return `<button class="opt mission" data-m="${i}">${CINEMA && person ? `<span class="missionRequester"><img src="assets/cinema/${person.image}" alt="${person.name}"><span><strong>${person.name}</strong><small>${person.role}</small></span></span><span class="missionQuote">${CP.story.esc(CP.fill(request.line, region, o.year))}</span>` : ''}<span class="roleTag ${o.role}">${ROLES[o.role].name}</span><b>${name}</b><span class="missionDesc">${desc}</span>
       <span class="missionWhy"><strong>Neden bu görev?</strong>${CP.missionReason(G, o, region)}</span>
       ${intel ? `<div class="intel">Rapor: ${intel.list.join(' · ')}<br>Dağılma riski: ${intel.risk}</div>` : '<div class="intel">Gemide araştırmacı yok: Rapor alınamıyor.</div>'}</button>`;
@@ -458,7 +459,7 @@
     alignJump(p, (hits) => beginMission(p, hits));
   }
   function beginMission(p, hits) {
-    plan = { ...p, choices: [], logs: [], vet: G.vets[p.role] > 0, alignDiscount: CP.alignDiscount(hits) };
+    plan = { ...p, choices: [], logs: [], vet: G.vets[p.role] > 0, alignDiscount: CP.alignDiscount(hits), speaker: CP.story?.crewMember(p.role, sentOf(p.role)) };
     plan.stages = CP.stages(G, plan);
     if (!(CINEMA && plan.tutorial)) sfx.jump();
     renderStage(0);
@@ -577,30 +578,19 @@
     return `<div class="resourceLedger"><h3>Bu Sıçramanın Kaynakları</h3><div class="stat"><span>Çekirdek enerjisi</span><b>${f(r.energyBefore)} → ${f(r.energyAfter)}</b></div><p>−${f(r.spent)} sıçrama · +${f(r.recovered)} ikmal${r.shipResearch ? ` · Gemi araştırması +${f(r.shipResearch)} teknoloji bonusu` : ''}</p></div>`;
   }
   function reportBody(rep) {
-    const d = rep.diff, story = CP.reportStory(rep);
-    const { before, after } = CP.reportTracks(G, rep);
-    const trace = story.traces.length ? `<div class="chain">${story.traces.map(evLine).join('')}</div>`
-      : '<p class="muted">Bu müdahaleye bağlı ayrı bir tarihsel yankı kaydedilmedi. Etkisini aşağıdaki ölçümlerde görebilirsin.</p>';
-    return `<div class="reportStory">
-      <section><span class="eyebrow">01 · KARARIN</span><h3>${story.action}</h3>
-        ${story.choices.length ? `<ul class="decisionList">${story.choices.map((t) => `<li>Tim ${t}.</li>`).join('')}</ul>` : ''}</section>
-      <section><span class="eyebrow">02 · TARİHTEKİ İZİ</span>${trace}</section>
-      <section><span class="eyebrow">03 · ${story.afterYear} YILINDA ${story.name.toLocaleUpperCase('tr-TR')}</span>
-        <p class="muted">Önceki tarih → yeni tarih${story.beforeYear !== story.afterYear ? ` · Önceki çizgi ${story.beforeYear}, yeni çizgi ${story.afterYear} yılında sona eriyor; ölçümler farklı yıllara ait.` : ''}</p>
-        ${story.changes.map((r) => `<div class="stat outcome"><span>${r.label}</span><span><b>${Math.round(r.a)} → ${Math.round(r.b)}</b> · ${mag(r.d, r.inverse)}</span></div>`).join('') || '<p>Bu bölgede belirgin bir ölçüm farkı oluşmadı.</p>'}
-      </section></div>
-      <div class="reportProgress"><h3>İkinci Prototip</h3>
-        ${Object.entries(CP.TRACKS).map(([k, n]) => `<div class="stat"><span>${n}</span><span>%${Math.round(before[k])} → %${Math.round(after[k])} · ${mag(after[k] - before[k])}</span></div>`).join('')}
-      </div>
-      ${resourceBlock(rep)}
-      ${d.newMilestones.length ? `<h3>Yeni Eşikler</h3>${d.newMilestones.slice(0, 3).map((m) => `<div class="mile">★ ${REG[m.r].name}: ${m.name}</div>`).join('')}` : ''}
-      <details class="more"><summary>Tüm ölçümleri ve dünya olaylarını incele</summary>
-        <div class="cols"><div>${localBlock(rep.iv?.region || rep.region, rep)}
-        ${deltaRow('ppm', 'Küresel karbon', true, d, ' ppm')}${deltaRow('water', 'Küresel tatlı su', false, d)}${deltaRow('bio', 'Biyoçeşitlilik', false, d)}${deltaRow('renew', 'Temiz enerji', false, d)}${deltaRow('ocean', 'Okyanus yükü', true, d)}${deltaRow('unrest', 'İsyan riski', true, d)}</div>
-        <div><h3>Diğer değişen dünya olayları</h3><p class="muted">Bunlar iki tarih arasındaki farklardır; görevin doğrudan izleri yukarıda gösterilir.</p>
-        <div class="chain">${d.newEvents.filter((e) => e.iv == null && (e.kind === 'major' || e.good)).slice(0, 5).map(evLine).join('') || '<div>Yeni büyük olay kaydedilmedi.</div>'}</div>
-        ${d.avoided.length ? `<h3>Bu tarihte yaşanmayan olaylar</h3>${d.avoided.slice(0, 3).map((e) => `<p>${e.y}: ${e.text}</p>`).join('')}` : ''}</div></div>
-      </details>`;
+    const d = rep.diff, story = CP.reportStory(rep), { before, after } = CP.reportTracks(G, rep);
+    const tags = { mine: 'Senin izin', world: 'Dünyada', bad: 'Dünyada', avoided: 'Önlendi', lost: 'Miras dağıldı' };
+    const points = CP.butterfly(rep);
+    const world = d.global.filter((x) => ['ppm', 'water', 'bio', 'unrest'].includes(x.k) && Math.abs(x.d) >= (x.k === 'ppm' ? 2 : 0.5)).slice(0, 3);
+    const worldName = { ppm: ['Küresel karbon', true, ' ppm'], water: ['Küresel tatlı su', false, ''], bio: ['Biyoçeşitlilik', false, ''], unrest: ['İsyan riski', true, ''] };
+    const r = rep.resources, f = (n) => n.toLocaleString('tr-TR', { maximumFractionDigits: 1 });
+    return `<div class="reportCols"><section class="butterfly"><h3>Kelebek Etkisi</h3><p class="bflyAction">${story.action}</p>
+      <div class="bflyList">${points.map((p) => `<div class="bfly ${p.type}"><i>${p.y}</i><span>${p.text}<small>${tags[p.type]}</small></span></div>`).join('') || '<p class="muted">Bu kez tarihe yansıyan bir olay kaydedilmedi.</p>'}</div></section>
+      <section class="reportData"><h3>İkinci Prototip</h3>${Object.entries(CP.TRACKS).map(([k, n]) => `<div class="stat"><span>${n}</span><span>%${Math.round(before[k])} → <b>%${Math.round(after[k])}</b></span></div>`).join('')}
+      ${story.changes.length ? `<h3>${story.name}</h3>${story.changes.map((x) => `<div class="stat"><span>${x.label}</span><span>${Math.round(x.a)} → <b>${Math.round(x.b)}</b> ${mag(x.d, x.inverse)}</span></div>`).join('')}` : ''}
+      ${world.length ? `<h3>Dünya</h3>${world.map((x) => `<div class="stat"><span>${worldName[x.k][0]}</span><span>${Math.round(x.a)} → <b>${Math.round(x.b)}${worldName[x.k][2]}</b> ${mag(x.d, worldName[x.k][1])}</span></div>`).join('')}` : ''}
+      ${d.newMilestones.length ? `<h3>Yeni Eşikler</h3>${d.newMilestones.slice(0, 2).map((m) => `<div class="mile">★ ${REG[m.r].name}: ${m.name}</div>`).join('')}` : ''}
+      ${r ? `<div class="stat reportEnergy"><span>Enerji</span><span>${f(r.energyBefore)} → <b>${f(r.energyAfter)}</b></span></div>` : ''}</section></div>`;
   }
   function showReport(rep, details = false) {
     if (!(CINEMA && rep.tutorial && !details && !G.over)) {
@@ -611,7 +601,7 @@
       (card) => { CP.takeOffer(G, card); CP.cinema.close(); afterTurn(); },
       () => { CP.cinema.close(); showReport(rep, true); });
     const cards = G.offers.map((id) => CARDS.find((c) => c.id === id));
-    modal(`${rep.tutorial ? '<p class="eyebrow">İLK SIÇRAMA TAMAMLANDI</p>' : ''}<h2>Kelebek Raporu</h2>${CINEMA ? CP.story.dialogue(rep.iv?.role === 'sci' ? 'cem' : 'leyla', 'Kararlarının ardından tarih yeniden hesaplandı. Bize ait izleri aşağıda ayırdım; diğer dünya olayları aynı şeyin sonucu olmak zorunda değil.') : ''}${reportBody(rep)}
+    modal(`${rep.tutorial ? '<p class="eyebrow">İLK SIÇRAMA TAMAMLANDI</p>' : ''}<h2>Kelebek Raporu</h2>${reportBody(rep)}
       ${rep.tutorial ? '<p class="tutorialNote">İlk izin oluştu. Şimdi üç hedef kolundan hangisinin geride olduğuna bak; sonraki bölgeyi, çağı ve görevi sen seçeceksin.</p>' : ''}
       ${G.tl.catastrophe ? `<div class="warn"><b>Bu tarih ${G.tl.catastrophe.y} yılında kıyametle bitiyor:</b> ${CATA[G.tl.catastrophe.type]}. Son Seans başladı.</div>` : ''}
       ${rep.volunteer ? `<p class="up">Bilinçlenen dünyadan yeni bir gönüllü geldi: ${ROLES[rep.volunteer].name}.</p>` : ''}
@@ -683,7 +673,7 @@
   // Dünya örgütü: gösterge kotayı aşınca kurulur, oyuncu yönünü seçer.
   function showOrg(org) {
     if (CINEMA && CP.sceneAudio.initialized) CP.sceneAudio.cue('positive');
-    modal(`<p class="eyebrow">KOTA AŞILDI · DÜNYA ÖRGÜTÜ KURULDU</p><h2>${org.name}</h2>${CINEMA ? CP.story.dialogue(org.speaker, org.text) : `<p class="lead">${org.text}</p>`}
+    modal(`<p class="eyebrow orgRise">▲ ${org.rise.toLocaleUpperCase('tr-TR')} · DÜNYA ÖRGÜTÜ KURULDU</p><h2>${org.name}</h2>${CINEMA ? CP.story.dialogue(org.speaker, org.text) : `<p class="lead">${org.text}</p>`}
       <h3>Örgütü nasıl yönlendireceksin?</h3><div class="optGrid orgGrid">${org.opts.map((o, i) => `<button class="opt" data-org="${i}"><b>${o.t}</b><span class="missionDesc">${o.note}</span></button>`).join('')}</div>`);
     document.querySelectorAll('[data-org]').forEach((b) => {
       b.onclick = () => {
@@ -739,7 +729,7 @@
   function showLetter(ctx) {
     const m = CP.missionById(ctx.iv.mission);
     if (CINEMA && CP.sceneAudio.initialized) CP.sceneAudio.cue('letter');
-    modal(`<h2>Geçmişten Bir Mektup</h2>${CINEMA ? CP.story.dialogue('leyla', `${CP.regionName(ctx.iv.region, ctx.year)} içindeki ${m.name} kuruluşunun mirasçılarından bir mektup var. Size okuyorum: ${ctx.letter.text}`) : ''}<p style="margin:0;color:var(--dim)">${yr(ctx.year)}, ${CP.regionName(ctx.iv.region, ctx.year)}. Kurduğun "${m.name}" görevinin mirasçılarından. Yanıtlamak sıçrama harcatmaz.</p>
+    modal(`<h2>Geçmişten Bir Mektup</h2>${CINEMA ? CP.story.dialogue('cem', `${CP.regionName(ctx.iv.region, ctx.year)} içindeki ${m.name} kuruluşunun mirasçılarından bir mektup var. Size okuyorum: ${ctx.letter.text}`) : ''}<p style="margin:0;color:var(--dim)">${yr(ctx.year)}, ${CP.regionName(ctx.iv.region, ctx.year)}. Kurduğun "${m.name}" görevinin mirasçılarından. Yanıtlamak sıçrama harcatmaz.</p>
       <h3>${ctx.letter.title}</h3><p class="lead">${ctx.letter.text}</p>
       <div class="optGrid">${ctx.letter.opts.map((o, i) => `<button class="opt" data-l="${i}"><b>${o.t}</b>${optTags(o)}</button>`).join('')}</div>
       <div class="mfoot"><button id="mClose">Mektubu yanıtsız bırak</button></div>`);
@@ -750,7 +740,7 @@
         persistRun();
         renderAll();
         if (G.over) return showEnd();
-        modal(`<h2>Mektuba Yanıt</h2>${CINEMA ? CP.story.dialogue('leyla', 'Yanıtını kayda geçirdim. Şimdi aynı bölgenin önceki ve yeni ölçümlerine bakalım; her kazanımın başka bir etkisi olabilir.') : ''}<div class="chain"><div><i>${ctx.year}</i>${CP.fill(o.log, ctx.iv.region, ctx.year)}</div></div>
+        modal(`<h2>Mektuba Yanıt</h2>${CINEMA ? CP.story.dialogue('cem', 'Yanıtını kayda geçirdim. Şimdi aynı bölgenin önceki ve yeni ölçümlerine bakalım; her kazanımın başka bir etkisi olabilir.') : ''}<div class="chain"><div><i>${ctx.year}</i>${CP.fill(o.log, ctx.iv.region, ctx.year)}</div></div>
           ${localBlock(ctx.iv.region, rep)}<div class="mfoot"><button id="mClose">Devam</button></div>`);
         $('#mClose').onclick = closeModal;
       };

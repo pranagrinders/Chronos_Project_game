@@ -32,6 +32,18 @@ globalThis.CP = globalThis.CP || {};
     return reasons[offer.m.id] || 'Bu görev bölgenin geleceğine müdahale eder; sonuç kararlarına ve tarihin akışına bağlıdır.';
   };
 
+  // Özet ekranının sol sütunu: müdahalenin izi, dünyada değişenler, önlenen olaylar.
+  CP.butterfly = (rep) => {
+    const own = rep.iv?.id, mine = rep.iv && !rep.extracted ? rep.after.log.filter((e) => e.iv === own) : [];
+    const world = rep.diff.newEvents.filter((e) => e.iv !== own && e.kind !== 'org' && (e.kind === 'major' || e.good || e.kind === 'echo')).slice(0, 6);
+    const avoided = rep.diff.avoided.slice(0, 4);
+    return [
+      ...mine.slice(0, 10).map((e) => ({ y: e.y, text: e.text, type: e.kind === 'legacy' ? 'lost' : 'mine' })),
+      ...world.map((e) => ({ y: e.y, text: e.text, type: e.good ? 'world' : 'bad' })),
+      ...avoided.map((e) => ({ y: e.y, text: e.text, type: 'avoided' })),
+    ].sort((a, b) => a.y - b.y);
+  };
+
   CP.reportTracks = (G, rep) => {
     const before = CP.tracks(G, rep.before);
     // Yeni turdaki gemi/kart teknoloji bonusu geçmiş ölçüme sızmasın.

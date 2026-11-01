@@ -95,3 +95,20 @@ test('Örgüt, vardiya ve hizalama kayıttan aynı tarihle döner', () => {
   const bad = JSON.parse(CP.store.pack(G)); bad.data.orgs = { water: 9 };
   assert.throws(() => CP.store.unpack(JSON.stringify(bad)));
 });
+test('Kelebek haberleri dünyayı değiştirmez, olay sayısını artırır', () => {
+  const run = (news) => {
+    const saved = CP.MISSION_NEWS; if (!news) CP.MISSION_NEWS = {};
+    try {
+      const G = CP.newGame(7), p = CP.firstMission(G);
+      p.choices = CP.stages(G, p).map((s) => s.opts[0]);
+      const rep = CP.jump(G, p);
+      return { global: G.tl.final.global, raw: G.tl.raw, own: rep.chain.length };
+    } finally { CP.MISSION_NEWS = saved; }
+  };
+  const a = run(true), b = run(false);
+  assert.deepEqual(a.global, b.global); assert.deepEqual(a.raw, b.raw);
+  assert.ok(a.own > b.own);
+});
+test('Örgüt metinleri olumlu; kota sözü geçmez', () => {
+  for (const o of CP.ORGS) { assert.ok(o.rise); assert.ok(!/kota|eşi[kğ]/i.test(o.text), o.key); }
+});
